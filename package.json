@@ -1,0 +1,25 @@
+{
+  "name": "citymunch-slack-bot-server",
+  "version": "0.0.1",
+  "main": "src/index.js",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "change-case-keys": "0.0.4",
+    "express": "~4.14.0",
+    "local-date-time": "0.0.5",
+    "mongoose": "~4.5.8"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^3.2.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "mocha --slow 200 --timeout 5000 test/*",
+    "test-watch": "mocha --slow 200 --timeout 5000 test/* -w"
+  },
+  "engines": {
+    "node": ">=7.6.0",
+    "npm": ">=3.0.0"
+  }
+}

@@ -1,0 +1,1 @@
+ssh cm-slack-bot 'tail -f /var/log/citymunch/slack-bot.log'

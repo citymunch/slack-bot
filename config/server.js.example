@@ -1,0 +1,9 @@
+module.exports = {
+    port: 9015,
+    slackClientId: '',
+    slackClientSecret: '',
+    citymunchApiHostname: 'dev-api.citymunchapp.com',
+    citymunchApiKey: '',
+    database: 'slack_dev',
+    urlShortener: 'http://dev-url-shortener.citymun.ch',
+};

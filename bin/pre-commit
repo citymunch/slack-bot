@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+echo 'Running pre-commit hook'
+echo
+
+echo 'Running tests'
+npm test
+if [[ $? != '0' ]]; then
+    echo 'Tests failed'
+    echo 'Review the output of the tests and commit your fixes'
+    exit 1
+fi
+echo
+
+echo 'Running .editorconfig checker'
+editorconfig-cli check src config bin static README.md
+if [[ $? != '0' ]]; then
+    echo '.editorconfig checker failed'
+    echo 'Review the output then commit your fixes'
+    exit 1
+fi
+echo
+
+echo 'Success'
