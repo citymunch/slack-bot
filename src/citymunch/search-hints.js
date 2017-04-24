@@ -66,8 +66,9 @@ async function matchCuisineType(text) {
     const cuisineTypes = await getCuisineTypes();
 
     for (let i = 0; i < cuisineTypes.length; i++) {
-        if (cuisineTypes[i].toLowerCase() === lowerCaseText) {
-            return cuisineTypes[i];
+        const cuisine = cuisineTypes[i];
+        if (cuisine.toLowerCase() === lowerCaseText || cuisine.toLowerCase() === lowerCaseText + 's') {
+            return cuisine;
         }
     }
 

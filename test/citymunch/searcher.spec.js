@@ -36,6 +36,10 @@ describe('Searcher', () => {
             expectCuisineType('chinese food.', 'Chinese', done);
         });
 
+        it('should match the singular version of plural types', (done) => {
+            expectCuisineType('burger.', 'Burgers', done);
+        });
+
         it('should trim white space', (done) => {
             expectCuisineType('   SOUTh     amerICAn    ', 'South American', done);
         });
