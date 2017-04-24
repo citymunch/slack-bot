@@ -84,44 +84,22 @@ function getUserFriendlyErrorMessage(error, query) {
 /**
  * Responds to /citymunch.
  */
-async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, responseUrl) {
+async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, responseUrl, userId) {
     try {
-        const result = await searcher.search(query);
+        const result = await searcher.search(query, userId);
         console.log('Result for query "' + query + '":', result);
 
-        let messageResponse;
-        if (result.hasEvent) {
-            messageResponse = {
-                response_type: 'ephemeral',
-                text: result.message,
-                attachments: [
-                    {
-                        title: 'Reserve voucher',
-                        title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
-                        color: '#38B471',
-                    },
-                ],
-            };
-        } else {
-            messageResponse = {
-                response_type: 'ephemeral',
-                text: result.message,
-                attachments: [
-                    {
-                        title: 'View on CityMunch',
-                        title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
-                        color: '#38B471',
-                    },
-                ],
-            };
-        }
+        const messageResponse = {
+            response_type: 'ephemeral',
+            text: result.message,
+        };
 
         // Respond immediately, instead of using the hook response URL, because delayed responses
         // to the hook URL don't show the original user's "/citymunch [query]" message in the
         // channel.
         httpResponse.send(messageResponse);
 
-        slackResponses.save({query, text: messageResponse.text, attachments: messageResponse.attachments});
+        slackResponses.save({query, text: messageResponse.text});
     } catch (error) {
         console.log('Error searching and responding to query:', error);
 
@@ -140,39 +118,15 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
 /**
  * Responds to @citymunch.
  */
-async function searchAndRespondToCityMunchMention(query, team, channelId) {
+async function searchAndRespondToCityMunchMention(query, team, channelId, userId) {
     try {
-        const result = await searcher.search(query);
+        const result = await searcher.search(query, userId);
         console.log('Result for query "' + query + '":', result);
 
-        let attachments;
-        if (result.hasEvent) {
-            attachments = [
-                {
-                    title: 'Reserve voucher',
-                    title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
-                    color: '#38B471',
-                },
-            ];
-        } else {
-            attachments = [
-                {
-                    title: 'View on CityMunch',
-                    title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
-                    color: '#38B471',
-                },
-            ];
-        }
-
-        await slackTeams.postToChannel(
-            team,
-            channelId,
-            result.message,
-            attachments
-        );
+        await slackTeams.postToChannel(team, channelId, result.message);
         console.log('Replied in channel:', result.message);
 
-        slackResponses.save({query, text: result.message, attachments: attachments});
+        slackResponses.save({query, text: result.message});
     } catch (error) {
         console.log('Error searching and responding to query:', error);
 
@@ -208,7 +162,7 @@ async function handleSlashCitymunch(req, res) {
         const text = EASTER_EGGS[req.body.text.toLowerCase()]();
         res.send(getInChannelPlainTextResponse(text));
     } else {
-        searchAndRespondToSlashCityMunchCommand(req.body.text, res, req.body.responseUrl);
+        searchAndRespondToSlashCityMunchCommand(req.body.text, res, req.body.responseUrl, req.body.userId);
     }
 
     slackSlashCommands.saveUse(req.body);
@@ -241,7 +195,7 @@ async function handleMessageEvent(req) {
             if (EASTER_EGGS[query.toLowerCase()]) {
                 respondToCityMunchMentionContainingEasterEgg(query, team, event.channel);
             } else {
-                searchAndRespondToCityMunchMention(query, team, event.channel);
+                searchAndRespondToCityMunchMention(query, team, event.channel, event.user);
             }
         }
     } else if (event.botId) {

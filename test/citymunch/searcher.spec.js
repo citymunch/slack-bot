@@ -227,10 +227,10 @@ describe('Searcher', () => {
         it('should return a specifically chosen restaurant even if there are no upcoming offers', (done) => {
             search('K10')
                 .then(result => {
-                    if (result.hasEvent === false && result.message === 'K10 doesn\'t have any offers coming up today.') {
+                    if (result.hasEvents === false && result.message.indexOf('K10 doesn\'t have any offers coming up today.') !== -1) {
                         done();
                     } else {
-                        done(new Error('Result invalid: ' + result));
+                        done(new Error('Result invalid: ' + JSON.stringify(result)));
                     }
                 })
                 .catch(done);

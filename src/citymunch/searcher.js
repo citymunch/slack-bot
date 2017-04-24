@@ -1,9 +1,11 @@
 'use strict';
 
 const cmApi = require('./api');
+const config = require('../../config/server');
 const geocoder = require('./geocoder');
 const localDateTime = require('local-date-time');
 const searchHints = require('./search-hints');
+const searchQueries = require('./search-queries');
 
 const MIXED_REGEX = new RegExp(/.+ (in|around|near) .+/, 'i');
 const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
@@ -13,7 +15,7 @@ const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
  *
  * @return {Promise}
  */
-async function parse(text) {
+async function parse(text, userId) {
     text = text.trim();
 
     if (text.endsWith('.')) {
@@ -24,30 +26,32 @@ async function parse(text) {
         text = text.substring(0, text.length - 6).trim();
     }
 
+    let result;
     if (MIXED_REGEX.test(text)) {
-        return await parseMixed(text);
+        result = await parseMixed(text);
     } else {
-        return await parseSingle(text);
+        result = await parseSingle(text, userId);
     }
+    searchQueries.save(text, result, userId);
+    return result;
 }
 
-async function parseSingle(text) {
+async function parseSingle(text, userId) {
     const result = {
         cuisineType: null,
         restaurants: [],
         location: null,
     };
 
-    const cuisineType = await searchHints.matchCuisineType(text);
-    if (cuisineType !== false) {
-        result.cuisineType = cuisineType;
-        return result;
-    }
-
     const restaurants = await searchHints.matchRestaurants(text);
     if (restaurants.length > 0) {
         result.restaurants = restaurants;
         return result;
+    }
+
+    const cuisineType = await searchHints.matchCuisineType(text);
+    if (cuisineType !== false) {
+        result.cuisineType = cuisineType;
     }
 
     try {
@@ -58,7 +62,22 @@ async function parseSingle(text) {
         // Geocode failed -- ignore.
     }
 
-    throw new Error('Could not parse text: ' + text);
+    // If only a cuisine type was searched for, without a location, and the user has searched for a
+    // location previously, assume that location.
+    if (result.cuisineType && !result.location) {
+        if (userId) {
+            const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
+            if (latestLocationForSameUser) {
+                console.log('Adopted location from last search by same user', latestLocationForSameUser);
+                result.location = latestLocationForSameUser;
+            }
+        }
+        return result;
+    } else if (result.cuisineType && result.location) {
+        return result;
+    } else {
+        throw new Error('Could not parse text: ' + text);
+    }
 }
 
 async function parseMixed(text) {
@@ -141,8 +160,8 @@ function calculateDistanceBetweenTwoCoordsInMeters(cord1, cord2) {
  *
  * @return {Promise}
  */
-async function search(text) {
-    const criteria = await parse(text);
+async function search(text, userId) {
+    const criteria = await parse(text, userId);
 
     let url = '/restaurants/search/authorised-restaurants?';
 
@@ -189,33 +208,42 @@ async function search(text) {
         if (criteria.restaurants.length > 0) {
             // If the user wanted a specific restaurant, always return a link to them, even if there
             // are no offer events today.
-            const chosenRestaurant = criteria.restaurants[0];
+            let message = '';
+            for (let i = 0; i < criteria.restaurants.length; i++) {
+                const restaurant = criteria.restaurants[i];
+                message += `${restaurant.name} doesn\'t have any offers coming up today.`;
+                message += `<${config.urlShortener}/restaurant/${restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|View on CityMunch>\n`;
+            }
+
             return {
                 parsedCriteria: criteria,
-                hasEvent: false,
-                message: `${chosenRestaurant.name} doesn\'t have any offers coming up today.`,
-                restaurant: {
-                    id: chosenRestaurant.id,
-                },
+                hasEvents: false,
+                message,
             };
         } else {
             throw new Error('We couldn\'t find any offers for that search that are on today');
         }
     }
 
-    const event = events[Math.floor(Math.random() * events.length)];
+    let message = '';
+    for (let i = 0; i < events.length; i++) {
+        if (i >= 3) {
+            break;
+        }
 
-    const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
-    const prettyStartTime = formatLocalTime(localDateTime.LocalTime.of(event.event.startTime));
-    const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
+        const event = events[Math.floor(Math.random() * events.length)];
+        const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
+        const prettyStartTime = formatLocalTime(localDateTime.LocalTime.of(event.event.startTime));
+        const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
+        message += `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime} on ${prettyDate}\n`;
+        message += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
+    }
+    message = message.trim();
 
     return {
         parsedCriteria: criteria,
-        hasEvent: true,
-        message: `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime} on ${prettyDate}`,
-        restaurant: {
-            id: event.restaurant.id,
-        },
+        hasEvents: true,
+        message,
     };
 }
 
