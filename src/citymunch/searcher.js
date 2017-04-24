@@ -248,7 +248,7 @@ async function search(text, userId) {
             break;
         }
 
-        const event = events[Math.floor(Math.random() * events.length)];
+        const event = events[i];
         const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
         const prettyStartTime = formatLocalTime(localDateTime.LocalTime.of(event.event.startTime));
         const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
