@@ -13,7 +13,7 @@ fi
 echo
 
 echo 'Running ESLint checker'
-node_modules/.bin/eslint eslint src
+npm run lint
 if [[ $? != '0' ]]; then
     echo 'ESLint failed'
     echo 'Review the output then commit your fixes'

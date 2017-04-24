@@ -17,7 +17,8 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "mocha --slow 200 --timeout 5000 test/*",
-    "test-watch": "mocha --slow 200 --timeout 5000 test/* -w"
+    "test-watch": "mocha --slow 200 --timeout 5000 test/* -w",
+    "lint": "eslint src"
   },
   "engines": {
     "node": ">=7.6.0",

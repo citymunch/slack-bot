@@ -3,7 +3,11 @@
 set -o errexit
 set -o nounset
 
+echo 'Running tests'
 npm test
+
+echo 'Running ESLint checker'
+npm run lint
 
 echo 'Config is:'
 cat config/server.js
