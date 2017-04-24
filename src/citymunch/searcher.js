@@ -94,7 +94,7 @@ async function parseMixed(text) {
         result.location = location;
     } catch (e) {
         // Geocode failed -- fail because the mixed query must be location-limited.
-        throw new Error('Could not parse text: ' + text);
+        throw new Error('Could not geocode: ' + text);
     }
 
     return result;

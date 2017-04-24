@@ -73,6 +73,14 @@ function getInChannelPlainTextResponse(text) {
     };
 }
 
+function getUserFriendlyErrorMessage(error, query) {
+    if (error && error.message.startsWith('Could not geocode')) {
+        return 'We couldn\'t understand the location part of your search (' + query + '). Try another location?';
+    } else {
+        return 'We couldn\'t find any offers for that search (' + query + ') that are on today. Try another search like "/citymunch London" or "/citymunch Bristol"?';
+    }
+}
+
 /**
  * Responds to /citymunch.
  */
@@ -121,7 +129,7 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
 
         const messageResponse = {
             response_type: 'ephemeral',
-            text: 'We couldn\'t find any offers for that search that are on today',
+            text: getUserFriendlyErrorMessage(error, query),
         };
         slackApi.postToHookUrl(responseUrl, messageResponse);
 
@@ -168,7 +176,7 @@ async function searchAndRespondToCityMunchMention(query, team, channelId) {
     } catch (error) {
         console.log('Error searching and responding to query:', error);
 
-        const message = 'We couldn\'t find any offers for that search that are on today';
+        const message = getUserFriendlyErrorMessage(error, query);
 
         slackTeams.postToChannel(team, channelId, message);
 
