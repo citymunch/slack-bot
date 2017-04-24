@@ -245,7 +245,10 @@ async function handleMessageEvent(req) {
             }
         }
     } else if (event.botId) {
-        console.log(`Bot "${event.username}" said in team ${team.teamName}: ${event.text}`);
+        // Ignore our own bot talking -- we already know what we've said.
+        if (event.username !== 'CityMunch') {
+            console.log(`Bot "${event.username}" said in team ${team.teamName}: ${event.text}`);
+        }
     }
 }
 
