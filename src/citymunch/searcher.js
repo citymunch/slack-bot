@@ -164,7 +164,7 @@ async function search(text) {
                 + `&southwestPoint=${commaSeperatePoint(criteria.location.southwest)}`;
         } else if (criteria.location.center) {
             url += `&nearPoint=${commaSeperatePoint(criteria.location.center)}`
-                + '&rangeInKilometers=3';
+                + '&rangeInKilometers=1';
         } else {
             throw new Error('Unsure what to do with location: ' + JSON.stringify(criteria.location));
         }
