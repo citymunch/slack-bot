@@ -90,7 +90,7 @@ function getInChannelPlainTextResponse(text) {
  */
 async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, responseUrl) {
     try {
-        const result = await searcher.search(query)
+        const result = await searcher.search(query);
         console.log('Result for query "' + query + '":', result);
 
         // Respond immediately, instead of using the hook response URL, because delayed responses
@@ -130,7 +130,7 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
  */
 async function searchAndRespondToCityMunchMention(query, team, channelId) {
     try {
-        const result = await searcher.search(query)
+        const result = await searcher.search(query);
         console.log('Result for query "' + query + '":', result);
 
         const attachments = [
@@ -141,7 +141,7 @@ async function searchAndRespondToCityMunchMention(query, team, channelId) {
             },
         ];
 
-        const response = await slackTeams.postToChannel(
+        await slackTeams.postToChannel(
             team,
             channelId,
             result.message,
@@ -202,11 +202,11 @@ app.post('/slash/citymunch', function(req, res) {
 async function handleMessageEvent(req) {
     const event = req.body.event;
 
+    const team = await slackTeams.findTeam(req.body.teamId);
+
     // `user` will be set if the event was from a user.
     // `username` and `botId` will be set if the event was from a bot.
     if (event.user) {
-        const team = await slackTeams.findTeam(req.body.teamId);
-
         console.log(`User "${event.user}" said in team ${team.teamName}: ${event.text}`);
 
         const citymunchBotUserId = team.bot.botUserId;

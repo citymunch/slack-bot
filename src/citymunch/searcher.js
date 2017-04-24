@@ -151,7 +151,7 @@ async function search(text) {
     }
 
     if (criteria.restaurants.length > 0) {
-        const ids = criteria.restaurants.map(r => r.id).join(',')
+        const ids = criteria.restaurants.map(r => r.id).join(',');
         url += `&ids=${ids}`;
     }
 
@@ -164,7 +164,7 @@ async function search(text) {
                 + `&southwestPoint=${commaSeperatePoint(criteria.location.southwest)}`;
         } else if (criteria.location.nearPoint) {
             url += `&nearPoint=${commaSeperatePoint(criteria.location.center)}`
-                + `&rangeInKilometers=5`;
+                + '&rangeInKilometers=5';
         } else {
             throw new Error('Unsure what to do with location: ' + JSON.stringify(criteria.location));
         }

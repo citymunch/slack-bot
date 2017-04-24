@@ -12,6 +12,15 @@ if [[ $? != '0' ]]; then
 fi
 echo
 
+echo 'Running ESLint checker'
+node_modules/.bin/eslint eslint src
+if [[ $? != '0' ]]; then
+    echo 'ESLint failed'
+    echo 'Review the output then commit your fixes'
+    exit 1
+fi
+echo
+
 echo 'Running .editorconfig checker'
 editorconfig-cli check src config bin static README.md
 if [[ $? != '0' ]]; then

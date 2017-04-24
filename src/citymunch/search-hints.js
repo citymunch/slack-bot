@@ -6,7 +6,7 @@ let apiResponse;
 
 let hasLoaded = false;
 
-const getResponsePromise = new Promise(function(resolve, reject) {
+const getResponsePromise = new Promise(function(resolve) {
     const interval = setInterval(function() {
         if (hasLoaded) {
             resolve({

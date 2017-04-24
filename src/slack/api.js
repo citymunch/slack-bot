@@ -33,7 +33,7 @@ async function doRequest(method, domain, path, bodyData = null) {
                     if (jsonString) {
                         let json;
                         try {
-                            let json = JSON.parse(jsonString);
+                            json = JSON.parse(jsonString);
                         } catch (e) {
                             console.error('Response body is not valid JSON:', jsonString);
                             throw e;
