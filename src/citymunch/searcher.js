@@ -157,14 +157,14 @@ async function search(text) {
 
     if (criteria.location) {
         const isInAreaSearch = criteria.location.northeast && criteria.location.southwest &&
-            calculateDistanceBetweenTwoCoordsInMeters(criteria.location.northeast, criteria.location.southwest) > 500;
+            calculateDistanceBetweenTwoCoordsInMeters(criteria.location.northeast, criteria.location.southwest) > 300;
 
         if (isInAreaSearch) {
             url += `&northeastPoint=${commaSeperatePoint(criteria.location.northeast)}`
                 + `&southwestPoint=${commaSeperatePoint(criteria.location.southwest)}`;
-        } else if (criteria.location.nearPoint) {
+        } else if (criteria.location.center) {
             url += `&nearPoint=${commaSeperatePoint(criteria.location.center)}`
-                + '&rangeInKilometers=5';
+                + '&rangeInKilometers=3';
         } else {
             throw new Error('Unsure what to do with location: ' + JSON.stringify(criteria.location));
         }
