@@ -93,20 +93,36 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
         const result = await searcher.search(query);
         console.log('Result for query "' + query + '":', result);
 
+        let messageResponse;
+        if (result.hasEvent) {
+            messageResponse = {
+                response_type: 'in_channel',
+                text: result.message,
+                attachments: [
+                    {
+                        title: 'Reserve voucher',
+                        title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
+                        color: '#38B471',
+                    },
+                ],
+            };
+        } else {
+            messageResponse = {
+                response_type: 'in_channel',
+                text: result.message,
+                attachments: [
+                    {
+                        title: 'View on CityMunch',
+                        title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
+                        color: '#38B471',
+                    },
+                ],
+            };
+        }
+
         // Respond immediately, instead of using the hook response URL, because delayed responses
         // to the hook URL don't show the original user's "/citymunch [query]" message in the
         // channel.
-        const messageResponse = {
-            response_type: 'in_channel',
-            text: result.message,
-            attachments: [
-                {
-                    title: 'Reserve voucher',
-                    title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
-                    color: '#38B471',
-                },
-            ],
-        };
         httpResponse.send(messageResponse);
 
         slackResponses.save({query, text: messageResponse.text, attachments: messageResponse.attachments});
@@ -133,13 +149,24 @@ async function searchAndRespondToCityMunchMention(query, team, channelId) {
         const result = await searcher.search(query);
         console.log('Result for query "' + query + '":', result);
 
-        const attachments = [
-            {
-                title: 'Reserve voucher',
-                title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
-                color: '#38B471',
-            },
-        ];
+        let attachments;
+        if (result.hasEvent) {
+            attachments = [
+                {
+                    title: 'Reserve voucher',
+                    title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
+                    color: '#38B471',
+                },
+            ];
+        } else {
+            attachments = [
+                {
+                    title: 'View on CityMunch',
+                    title_link: config.urlShortener + '/restaurant/' + result.restaurant.id + '?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB',
+                    color: '#38B471',
+                },
+            ];
+        }
 
         await slackTeams.postToChannel(
             team,

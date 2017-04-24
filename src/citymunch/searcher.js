@@ -186,12 +186,28 @@ async function search(text) {
 
     const events = activeEventsRespones.events;
     if (events.length === 0) {
-        throw new Error('We couldn\'t find any offers for that search that are on today');
+        if (criteria.restaurants.length > 0) {
+            // If the user wanted a specific restaurant, always return a link to them, even if there
+            // are no offer events today.
+            const chosenRestaurant = criteria.restaurants[0];
+            return {
+                parsedCriteria: criteria,
+                hasEvent: false,
+                message: `${chosenRestaurant.name} doesn\'t have any offers coming up today.`,
+                restaurant: {
+                    id: chosenRestaurant.id,
+                },
+            };
+        } else {
+            throw new Error('We couldn\'t find any offers for that search that are on today');
+        }
     }
 
     const event = events[Math.floor(Math.random() * events.length)];
 
     return {
+        parsedCriteria: criteria,
+        hasEvent: true,
         message: `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${event.event.startTime}-${event.event.endTime} on ${event.event.date}`,
         restaurant: {
             id: event.restaurant.id,
