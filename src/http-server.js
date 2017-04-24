@@ -67,7 +67,7 @@ const EASTER_EGGS = {
 
 function getInChannelPlainTextResponse(text) {
     return {
-        response_type: 'in_channel',
+        response_type: 'ephemeral',
         text: text,
         color: 'good',
     };
@@ -84,7 +84,7 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
         let messageResponse;
         if (result.hasEvent) {
             messageResponse = {
-                response_type: 'in_channel',
+                response_type: 'ephemeral',
                 text: result.message,
                 attachments: [
                     {
@@ -96,7 +96,7 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
             };
         } else {
             messageResponse = {
-                response_type: 'in_channel',
+                response_type: 'ephemeral',
                 text: result.message,
                 attachments: [
                     {
