@@ -187,11 +187,28 @@ async function search(text, userId) {
         } else {
             throw new Error('Unsure what to do with location: ' + JSON.stringify(criteria.location));
         }
+
+        if (criteria.location.isFullPostcode && criteria.location.center) {
+            url += `&userPoint=${commaSeperatePoint(criteria.location.center)}`;
+        }
     }
 
     const authorisedRestaurantsResponse = await cmApi.get(url);
     if (authorisedRestaurantsResponse.results.length === 0) {
         throw new Error('We couldn\'t find anything matching that search right now');
+    }
+
+    function getWalkingDistance(restaurantId) {
+        const matches = authorisedRestaurantsResponse.results.filter(result => {
+            return result.restaurant.id === restaurantId;
+        });
+        if (matches.length === 0) {
+            return null;
+        }
+        if (!matches[0].walkingDistance) {
+            return null;
+        }
+        return matches[0].walkingDistance.durationText;
     }
 
     const restaurantIds = authorisedRestaurantsResponse.results.map(result => result.restaurant.id);
@@ -235,7 +252,13 @@ async function search(text, userId) {
         const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
         const prettyStartTime = formatLocalTime(localDateTime.LocalTime.of(event.event.startTime));
         const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
-        message += `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime} on ${prettyDate}\n`;
+        const walkingDistance = getWalkingDistance(event.restaurant.id);
+
+        message += `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime} on ${prettyDate}`;
+        if (walkingDistance) {
+            message += ` (${walkingDistance} away)`;
+        }
+        message += '\n';
         message += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
     }
     message = message.trim();

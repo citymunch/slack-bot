@@ -3,6 +3,8 @@
 const cmApi = require('./api');
 const queryString = require('querystring');
 
+const FULL_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i;
+
 /**
  * @return {Promise} Resolves if found. Rejects otherwise.
  */
@@ -20,7 +22,10 @@ async function geocode(text) {
             if (!response.isFound) {
                 throw new Error('Could not geocode location: ' + text);
             }
-            return response.geometry;
+
+            const result = response.geometry;
+            result.isFullPostcode = FULL_POSTCODE_REGEX.test(text);
+            return result;
         });
 }
 
