@@ -220,7 +220,10 @@ async function search(text, userId) {
         `&endDate=${today.toString()}`
     );
 
-    const events = activeEventsRespones.events;
+    const events = activeEventsRespones.events
+        .filter(event => event.event.isActiveOnDate)
+        .filter(event => !event.event.hasEnded);
+
     if (events.length === 0) {
         if (criteria.restaurants.length > 0) {
             // If the user wanted a specific restaurant, always return a link to them, even if there
@@ -228,7 +231,7 @@ async function search(text, userId) {
             let message = '';
             for (let i = 0; i < criteria.restaurants.length; i++) {
                 const restaurant = criteria.restaurants[i];
-                message += `${restaurant.name} doesn\'t have any offers coming up today.`;
+                message += `${restaurant.name} doesn\'t have any offers coming up today.\n`;
                 message += `<${config.urlShortener}/restaurant/${restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|View on CityMunch>\n`;
             }
 
