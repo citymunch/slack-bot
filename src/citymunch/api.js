@@ -14,7 +14,7 @@ function doRequest(method, path) {
                 method: method,
                 headers: {
                     'Authorization': 'Partner ' + config.citymunchApiKey,
-                    'Accept': 'application/vnd.citymunch.v10+json',
+                    'Accept': 'application/vnd.citymunch.v11+json',
                 },
             },
             function (res) {
