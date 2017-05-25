@@ -266,6 +266,13 @@ async function search(text, userId) {
         if (walkingDistance) {
             message += ` (${walkingDistance} away)`;
         }
+
+        if (event.event.coversRemaining === 0) {
+            message += ' (all gone!)';
+        } else if (event.event.coversRemaining <= 5) {
+            message += ` (${event.event.coversRemaining} left)`;
+        }
+
         message += '\n';
         message += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
     }
