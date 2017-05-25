@@ -16,8 +16,8 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "mocha --slow 200 --timeout 5000 test/*",
-    "test-watch": "mocha --slow 200 --timeout 5000 test/* -w",
+    "test": "CM_ENV=uat mocha --slow 200 --timeout 5000 test/*",
+    "test-watch": "CM_ENV=uat mocha --slow 200 --timeout 5000 test/* -w",
     "lint": "eslint src"
   },
   "engines": {
