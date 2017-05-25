@@ -87,7 +87,6 @@ function getUserFriendlyErrorMessage(error, query) {
 async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, responseUrl, userId) {
     try {
         const result = await searcher.search(query, userId);
-        console.log('Result for query "' + query + '":', result);
 
         const messageResponse = {
             response_type: 'in_channel',
@@ -121,7 +120,6 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
 async function searchAndRespondToCityMunchMention(query, team, channelId, userId) {
     try {
         const result = await searcher.search(query, userId);
-        console.log('Result for query "' + query + '":', result);
 
         await slackTeams.postToChannel(team, channelId, result.message);
         console.log('Replied in channel:', result.message);
