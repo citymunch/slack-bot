@@ -41,7 +41,7 @@ describe('Searcher', () => {
         });
 
         it('should trim white space', (done) => {
-            expectCuisineType('   SOUTh     amerICAn    ', 'South American', done);
+            expectCuisineType('   MIDDle     eastern    ', 'Middle Eastern', done);
         });
     });
 
