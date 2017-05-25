@@ -252,12 +252,17 @@ async function search(text, userId) {
         }
 
         const event = events[i];
-        const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
         const prettyStartTime = formatLocalTime(localDateTime.LocalTime.of(event.event.startTime));
         const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
         const walkingDistance = getWalkingDistance(event.restaurant.id);
 
-        message += `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime} on ${prettyDate}`;
+        message += `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
+
+        if (!event.event.isToday) {
+            const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
+            message += ` on ${prettyDate}`;
+        }
+
         if (walkingDistance) {
             message += ` (${walkingDistance} away)`;
         }
