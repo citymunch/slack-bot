@@ -298,7 +298,7 @@ async function search(text, userId) {
         const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
         const walkingDistance = getWalkingDistance(event.restaurant.id);
 
-        let eventMessage = `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
+        let eventMessage = `${event.event.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
 
         if (!event.event.isToday) {
             const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
