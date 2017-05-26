@@ -315,6 +315,12 @@ async function search(text, userId) {
             eventMessage += ` (${event.event.coversRemaining} left)`;
         }
 
+        if (event.offer.groupDiscountBonuses && event.offer.groupDiscountBonuses.length > 0) {
+            const groupBonus = event.offer.groupDiscountBonuses[0];
+            const totalDiscount = groupBonus.bonus + event.event.discount;
+            eventMessage += `\nGroups of ${groupBonus.minCovers}+ get ${totalDiscount}%`;
+        }
+
         eventMessage += '\n';
         eventMessage += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
 
