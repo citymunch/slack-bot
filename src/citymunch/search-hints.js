@@ -1,6 +1,7 @@
 'use strict';
 
 const cmApi = require('./api');
+const utils = require('../utils');
 
 let apiResponse;
 
@@ -57,7 +58,7 @@ async function getRestaurants() {
  * @return {Promise}
  */
 async function matchCuisineType(text) {
-    let lowerCaseText = text.toLowerCase().trim().replace(/\s{2,}/, ' ');
+    let lowerCaseText = utils.normalizeSearchInput(text);
 
     if (lowerCaseText.endsWith(' food')) {
         lowerCaseText = lowerCaseText.substring(0, lowerCaseText.length - 5);
@@ -83,7 +84,7 @@ const HAS_SUFFIX_REGEX = /.+[\(@]/;
  * @return {Promise}
  */
 async function matchRestaurants(text) {
-    const lowerCaseText = text.toLowerCase().trim().replace(/\s{2,}/g, ' ');
+    const lowerCaseText = utils.normalizeSearchInput(text);
     const restaurants = await getRestaurants();
     const matches = [];
 
