@@ -198,7 +198,7 @@ async function handleMessageEvent(req) {
         }
     } else if (event.botId) {
         // Ignore our own bot talking -- we already know what we've said.
-        if (event.username !== 'CityMunch') {
+        if (event.username !== 'CityMunch' && event.text.indexOf('% off at ') === -1) {
             console.log(`Bot "${event.username}" said in team ${team.teamName}: ${event.text}`);
         }
     }
