@@ -1,9 +1,16 @@
 const chai = require('chai');
 const expect = chai.expect;
-
 const searcher = require('../../src/citymunch/searcher');
 const parse = searcher.parse;
 const search = searcher.search;
+const errors = require('../../src/citymunch/errors');
+const mongoose = require('../../src/db');
+
+after(() => {
+    mongoose.disconnect(() => {
+        mongoose.models = {};
+    });
+});
 
 describe('Searcher', () => {
     describe('parse() for cuisine types', () => {
@@ -191,9 +198,37 @@ describe('Searcher', () => {
         });
 
         it('should throw if only a location is understood, without a cuisine or restaurant', (done) => {
-            parse('sandwich near old street')
+            parse('blobblesquid near old street')
                 .then(() => done(new Error()))
                 .catch(() => done());
+        });
+
+        it('should throw UserNeedsToSayWhereTheyAreError if given "around me" and no previous location for this user', (done) => {
+            parse('around me', 'user' + Date.now())
+                .then(() => {
+                    done(new Error('Got a result when an error should have been thrown'))
+                })
+                .catch(error => {
+                    if (error instanceof errors.UserNeedsToSayWhereTheyAreError) {
+                        done();
+                    } else {
+                        done(new Error('Error is not an instance of UserNeedsToSayWhereTheyAreError'));
+                    }
+                });
+        });
+
+        it('should throw UserNeedsToSayWhereTheyAreError if given a cuisine and "near me" and no previous location for this user', (done) => {
+            parse('chinese near me', 'user' + Date.now())
+                .then(() => {
+                    done(new Error('Got a result when an error should have been thrown'))
+                })
+                .catch(error => {
+                    if (error instanceof errors.UserNeedsToSayWhereTheyAreError) {
+                        done();
+                    } else {
+                        done(new Error('Error is not an instance of UserNeedsToSayWhereTheyAreError'));
+                    }
+                });
         });
     });
 

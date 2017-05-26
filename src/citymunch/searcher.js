@@ -6,14 +6,19 @@ const geocoder = require('./geocoder');
 const localDateTime = require('local-date-time');
 const searchHints = require('./search-hints');
 const searchQueries = require('./search-queries');
+const utils = require('../utils');
+const errors = require('./errors');
 
 const MIXED_REGEX = new RegExp(/.+ (in|around|near) .+/, 'i');
 const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
+
+const LOCATION_NEAR_ME_TEXTS = ['near me', 'around me', 'here'];
 
 /**
  * Resolves to an object if successful. Rejects if unsuccessful.
  *
  * @return {Promise}
+ * @throws {UserNeedsToSayWhereTheyAreError}
  */
 async function parse(text, userId) {
     text = text.trim();
@@ -28,7 +33,7 @@ async function parse(text, userId) {
 
     let result;
     if (MIXED_REGEX.test(text)) {
-        result = await parseMixed(text);
+        result = await parseMixed(text, userId);
     } else {
         result = await parseSingle(text, userId);
     }
@@ -36,6 +41,9 @@ async function parse(text, userId) {
     return result;
 }
 
+/**
+ * @throws {UserNeedsToSayWhereTheyAreError}
+ */
 async function parseSingle(text, userId) {
     const result = {
         cuisineType: null,
@@ -54,12 +62,26 @@ async function parseSingle(text, userId) {
         result.cuisineType = cuisineType;
     }
 
-    try {
-        const location = await geocoder.geocode(text);
-        result.location = location;
-        return result;
-    } catch (e) {
-        // Geocode failed -- ignore.
+    if (LOCATION_NEAR_ME_TEXTS.indexOf(utils.normalizeSearchInput(text)) !== -1) {
+        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
+        if (latestLocationForSameUser) {
+            console.log('Adopted location from last search by same user', latestLocationForSameUser);
+            result.location = latestLocationForSameUser;
+            return result;
+        } else {
+            console.log('Asking the user where they are');
+            throw new errors.UserNeedsToSayWhereTheyAreError();
+        }
+    }
+
+    if (!result.location) {
+        try {
+            const location = await geocoder.geocode(text);
+            result.location = location;
+            return result;
+        } catch (e) {
+            // Geocode failed -- ignore.
+        }
     }
 
     // If only a cuisine type was searched for, without a location, and the user has searched for a
@@ -73,15 +95,18 @@ async function parseSingle(text, userId) {
             }
         }
         return result;
-    } else if (result.cuisineType && result.location) {
-        return result;
+    // } else if (result.cuisineType && result.location) {
+    //     return result;
     } else {
         // No location and no cuisine type - give up.
         throw new Error('Could not parse text: ' + text);
     }
 }
 
-async function parseMixed(text) {
+/**
+ * @throws {UserNeedsToSayWhereTheyAreError}
+ */
+async function parseMixed(text, userId) {
     const result = {
         cuisineType: null,
         restaurants: [],
@@ -109,15 +134,26 @@ async function parseMixed(text) {
         throw new Error('Could not parse text: ' + text);
     }
 
+    if (utils.normalizeSearchInput(locationText) === 'me') {
+        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
+        if (latestLocationForSameUser) {
+            console.log('Adopted location from last search by same user', latestLocationForSameUser);
+            result.location = latestLocationForSameUser;
+            return result;
+        } else {
+            console.log('Asking the user where they are');
+            throw new errors.UserNeedsToSayWhereTheyAreError();
+        }
+    }
+
     try {
         const location = await geocoder.geocode(locationText);
         result.location = location;
+        return result;
     } catch (e) {
         // Geocode failed -- fail because the mixed query must be location-limited.
         throw new Error('Could not geocode: ' + text);
     }
-
-    return result;
 }
 
 function commaSeperatePoint(point) {
@@ -160,6 +196,7 @@ function calculateDistanceBetweenTwoCoordsInMeters(cord1, cord2) {
  * Rejects if there is no upcoming event today.
  *
  * @return {Promise}
+ * @throws {UserNeedsToSayWhereTheyAreError}
  */
 async function search(text, userId) {
     const criteria = await parse(text, userId);

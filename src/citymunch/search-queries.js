@@ -13,22 +13,19 @@ function save(unparsedCriteria, parsedCriteria, userId) {
     });
 }
 
+/**
+ * @return {Promise} Resolves to a location object if a location is found.
+ *                   Resolves to null if no location found.
+ */
 function findLatestLocationByUserId(userId) {
-    return new Promise(function(resolve, reject) {
-        SearchQueryModel.findOne({userId: userId, 'parsedCriteria.location': {$ne: null}})
-            .sort({_id: -1})
-            .exec(function(err, search) {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                if (!search) {
-                    resolve(null);
-                    return;
-                }
-                resolve(search.toObject().parsedCriteria.location);
-            });
-    });
+    return SearchQueryModel.findOne({userId: userId, 'parsedCriteria.location': {$ne: null}})
+        .sort({_id: -1})
+        .then(function (search) {
+            if (!search) {
+                return null;
+            }
+            return search.toObject().parsedCriteria.location;
+        });
 }
 
 module.exports = {

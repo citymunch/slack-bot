@@ -10,6 +10,7 @@ const slackEvents = require('./slack/events');
 const slackResponses = require('./slack/responses');
 const slackSlashCommands = require('./slack/slash-commands');
 const slackTeams = require('./slack/teams');
+const errors = require('./citymunch/errors');
 
 const app = express();
 
@@ -104,9 +105,16 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
 
         httpResponse.send('');
 
+        let message;
+        if (error instanceof errors.UserNeedsToSayWhereTheyAreError) {
+            message = 'Where are you?';
+        } else {
+            message = getUserFriendlyErrorMessage(error, query);
+        }
+
         const messageResponse = {
             response_type: 'ephemeral',
-            text: getUserFriendlyErrorMessage(error, query),
+            text: message,
         };
         slackApi.postToHookUrl(responseUrl, messageResponse);
 
