@@ -76,6 +76,7 @@ async function parseSingle(text, userId) {
     } else if (result.cuisineType && result.location) {
         return result;
     } else {
+        // No location and no cuisine type - give up.
         throw new Error('Could not parse text: ' + text);
     }
 }
