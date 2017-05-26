@@ -270,5 +270,17 @@ describe('Searcher', () => {
                 })
                 .catch(done);
         });
+
+        it('should indicate to include a "show more" button if there are more than 3 offers', (done) => {
+            search('London')
+                .then(result => {
+                    if (result.addShowMoreButton && result.message && result.messageAfterShowingMore) {
+                        done();
+                    } else {
+                        done(new Error('Result invalid: ' + JSON.stringify(result)));
+                    }
+                })
+                .catch(done);
+        });
     });
 });

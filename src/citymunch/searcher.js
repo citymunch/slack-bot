@@ -8,6 +8,7 @@ const searchHints = require('./search-hints');
 const searchQueries = require('./search-queries');
 const utils = require('../utils');
 const errors = require('./errors');
+const guid = require('guid');
 
 const MIXED_REGEX = new RegExp(/.+ (in|around|near) .+/, 'i');
 const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
@@ -289,35 +290,39 @@ async function search(text, userId) {
     }
 
     let message = '';
-    for (let i = 0; i < events.length; i++) {
-        if (i >= 3) {
-            break;
-        }
+    let messageAfterShowingMore = '';
 
+    for (let i = 0; i < events.length; i++) {
         const event = events[i];
         const prettyStartTime = formatLocalTime(localDateTime.LocalTime.of(event.event.startTime));
         const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
         const walkingDistance = getWalkingDistance(event.restaurant.id);
 
-        message += `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
+        let eventMessage = `${event.offer.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
 
         if (!event.event.isToday) {
             const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
-            message += ` on ${prettyDate}`;
+            eventMessage += ` on ${prettyDate}`;
         }
 
         if (walkingDistance) {
-            message += ` (${walkingDistance} away)`;
+            eventMessage += ` (${walkingDistance} away)`;
         }
 
         if (event.event.coversRemaining === 0) {
-            message += ' (all gone!)';
+            eventMessage += ' (all gone!)';
         } else if (event.event.coversRemaining <= 5) {
-            message += ` (${event.event.coversRemaining} left)`;
+            eventMessage += ` (${event.event.coversRemaining} left)`;
         }
 
-        message += '\n';
-        message += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
+        eventMessage += '\n';
+        eventMessage += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
+
+        if (i <= 2) {
+            message += eventMessage;
+        } else if (i <= 9) {
+            messageAfterShowingMore += eventMessage;
+        }
     }
     message = message.trim();
 
@@ -325,6 +330,9 @@ async function search(text, userId) {
         parsedCriteria: criteria,
         hasEvents: true,
         message,
+        messageAfterShowingMore,
+        addShowMoreButton: !!messageAfterShowingMore,
+        searchId: guid.raw(),
     };
 }
 

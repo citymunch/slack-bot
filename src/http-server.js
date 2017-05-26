@@ -7,6 +7,7 @@ const localDateTime = require('local-date-time');
 const searcher = require('./citymunch/searcher');
 const slackApi = require('./slack/api');
 const slackEvents = require('./slack/events');
+const slackMessageInteractions = require('./slack/message-interactions');
 const slackResponses = require('./slack/responses');
 const slackSlashCommands = require('./slack/slash-commands');
 const slackTeams = require('./slack/teams');
@@ -17,10 +18,14 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
+function convertObjectKeysFromSlackStyleToCityMunchStyle(object) {
+    return changeCaseKeys(object, 'camelize');
+}
+
 // Convert all inputs to camel-case.
 app.use(function(req, res, next) {
     if (typeof req.body === 'object') {
-        req.body = changeCaseKeys(req.body, 'camelize');
+        req.body = convertObjectKeysFromSlackStyleToCityMunchStyle(req.body);
     }
     next();
 });
@@ -92,14 +97,32 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
         const messageResponse = {
             response_type: 'in_channel',
             text: result.message,
+            attachments: [
+                {
+                    callback_id: 'search_result_' + result.searchId,
+                    color: '#38b471',
+                    attachment_type: 'default',
+                },
+            ],
         };
+
+        if (result.addShowMoreButton) {
+            messageResponse.attachments[0].actions = [
+                {
+                    name: 'show_more',
+                    text: 'Show more',
+                    type: 'button',
+                    value: 'more',
+                },
+            ];
+        }
 
         // Respond immediately, instead of using the hook response URL, because delayed responses
         // to the hook URL don't show the original user's "/citymunch [query]" message in the
         // channel.
         httpResponse.send(messageResponse);
 
-        slackResponses.save({query, text: messageResponse.text});
+        slackResponses.save({query, text: messageResponse.text, searchResult: result});
     } catch (error) {
         console.log('Error searching and responding to query:', error);
 
@@ -224,6 +247,32 @@ app.post('/events', function(req, res) {
     }
 
     slackEvents.save(req.body);
+});
+
+async function handleMessageInteraction(payload, res) {
+    console.log('Message interaction payload:', payload);
+
+    if (payload.callbackId.startsWith('search_result_')) {
+        const searchId = payload.callbackId.replace('search_result_', '');
+        const previousResponse = await slackResponses.findOneBySearchId(searchId);
+        if (!previousResponse) {
+            res.send('');
+            console.error('Previous message not found with search ID', searchId);
+            return;
+        }
+        res.send(previousResponse.searchResult.message + '\n' + previousResponse.searchResult.messageAfterShowingMore);
+        console.log('Expanded previous message with search ID', searchId);
+    } else {
+        console.error('Unexpected callback ID', payload.callbackId);
+    }
+
+    slackMessageInteractions.save(payload);
+}
+
+app.post('/message-interactions', function(req, res) {
+    let payload = JSON.parse(req.body.payload);
+    payload = convertObjectKeysFromSlackStyleToCityMunchStyle(payload);
+    handleMessageInteraction(payload, res);
 });
 
 app.get('/install', function(req, res) {

@@ -6,6 +6,7 @@
     "body-parser": "^1.15.2",
     "change-case-keys": "0.0.4",
     "express": "~4.14.0",
+    "guid": "0.0.12",
     "local-date-time": "0.0.5",
     "mongoose": "~4.5.8"
   },
