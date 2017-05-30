@@ -3,7 +3,8 @@
 const cmApi = require('./api');
 const config = require('../../config/server');
 const geocoder = require('./geocoder');
-const localDateTime = require('local-date-time');
+const LocalDate = require('local-date-time').LocalDate;
+const LocalTime = require('local-date-time').LocalTime;
 const searchHints = require('./search-hints');
 const searchQueries = require('./search-queries');
 const utils = require('../utils');
@@ -80,14 +81,14 @@ async function parseSingle(text, userId) {
     const normalizedText = utils.normalizeSearchInput(text);
 
     if (normalizedText === 'dinner') {
-        result.startTime = localDateTime.LocalTime.of('17:00');
-        result.endTime = localDateTime.LocalTime.of('20:30');
+        result.startTime = LocalTime.of('17:00');
+        result.endTime = LocalTime.of('20:30');
         return result;
     }
 
     if (normalizedText === 'lunch') {
-        result.startTime = localDateTime.LocalTime.of('12:00');
-        result.endTime = localDateTime.LocalTime.of('14:30');
+        result.startTime = LocalTime.of('12:00');
+        result.endTime = LocalTime.of('14:30');
         return result;
     }
 
@@ -155,13 +156,13 @@ async function parseMixed(text, userId) {
     const normalizedCuisineOrRestaurantOrTimeText = utils.normalizeSearchInput(cuisineOrRestaurantOrTimeText);
 
     if (normalizedCuisineOrRestaurantOrTimeText === 'dinner') {
-        result.startTime = localDateTime.LocalTime.of('17:00');
-        result.endTime = localDateTime.LocalTime.of('20:30');
+        result.startTime = LocalTime.of('17:00');
+        result.endTime = LocalTime.of('20:30');
     }
 
     if (normalizedCuisineOrRestaurantOrTimeText === 'lunch') {
-        result.startTime = localDateTime.LocalTime.of('12:00');
-        result.endTime = localDateTime.LocalTime.of('14:30');
+        result.startTime = LocalTime.of('12:00');
+        result.endTime = LocalTime.of('14:30');
     }
 
     if (!result.cuisineType && result.restaurants.length === 0 && !result.startTime && !result.endTime) {
@@ -288,7 +289,7 @@ async function search(text, userId) {
     }
 
     const restaurantIds = authorisedRestaurantsResponse.results.map(result => result.restaurant.id);
-    const today = localDateTime.LocalDate.today();
+    const today = LocalDate.today();
     const activeEventsRespones = await cmApi.get(
         '/offers/search/active-events-by-restaurant-ids?ids=' + restaurantIds.join(',') +
         '&includeEnded=false' +
@@ -326,14 +327,14 @@ async function search(text, userId) {
 
     for (let i = 0; i < events.length; i++) {
         const event = events[i];
-        const prettyStartTime = formatLocalTime(localDateTime.LocalTime.of(event.event.startTime));
-        const prettyEndTime = formatLocalTime(localDateTime.LocalTime.of(event.event.endTime));
+        const prettyStartTime = formatLocalTime(LocalTime.of(event.event.startTime));
+        const prettyEndTime = formatLocalTime(LocalTime.of(event.event.endTime));
         const walkingDistance = getWalkingDistance(event.restaurant.id);
 
         let eventMessage = `${event.event.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
 
         if (!event.event.isToday) {
-            const prettyDate = formatLocalDate(localDateTime.LocalDate.of(event.event.date));
+            const prettyDate = formatLocalDate(LocalDate.of(event.event.date));
             eventMessage += ` on ${prettyDate}`;
         }
 
