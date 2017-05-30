@@ -12,6 +12,7 @@ const slackResponses = require('./slack/responses');
 const slackSlashCommands = require('./slack/slash-commands');
 const slackTeams = require('./slack/teams');
 const errors = require('./citymunch/errors');
+const savedLocations = require('./citymunch/saved-locations');
 
 const app = express();
 
@@ -102,19 +103,36 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
                     callback_id: 'search_result_' + result.searchId,
                     color: '#38b471',
                     attachment_type: 'default',
+                    actions: [],
                 },
             ],
         };
 
         if (result.addShowMoreButton) {
-            messageResponse.attachments[0].actions = [
-                {
-                    name: 'show_more',
-                    text: 'Show more',
+            messageResponse.attachments[0].actions.push({
+                name: 'show_more',
+                text: 'Show more',
+                type: 'button',
+                value: 'more',
+            });
+        }
+
+        for (let i = 0; i < savedLocations.OPTIONS.length; i++) {
+            const option = savedLocations.OPTIONS[i];
+            if (result.parsedCriteria.location && ! await savedLocations.hasUserSaved(option.name, userId)) {
+                messageResponse.attachments[0].actions.push({
+                    name: 'save_location',
+                    text: `Save as "${option.name}"`,
                     type: 'button',
-                    value: 'more',
-                },
-            ];
+                    value: option.name,
+                    confirm: {
+                        title: `Save "${result.parsedCriteria.location.name}" as "${option.name}"?`,
+                        text: option.saveText,
+                        ok_text: 'Save',
+                        dismiss_text: 'Cancel',
+                    },
+                });
+            }
         }
 
         // Respond immediately, instead of using the hook response URL, because delayed responses
@@ -252,6 +270,8 @@ app.post('/events', function(req, res) {
 async function handleMessageInteraction(payload, res) {
     console.log('Message interaction payload:', payload);
 
+    slackMessageInteractions.save(payload);
+
     if (payload.callbackId.startsWith('search_result_')) {
         const searchId = payload.callbackId.replace('search_result_', '');
         const previousResponse = await slackResponses.findOneBySearchId(searchId);
@@ -260,13 +280,29 @@ async function handleMessageInteraction(payload, res) {
             console.error('Previous message not found with search ID', searchId);
             return;
         }
-        res.send(previousResponse.searchResult.message + '\n' + previousResponse.searchResult.messageAfterShowingMore);
-        console.log('Expanded previous message with search ID', searchId);
+
+        const action = payload.actions[0].name;
+
+        if (action === 'show_more') {
+            res.send(previousResponse.searchResult.message + '\n' + previousResponse.searchResult.messageAfterShowingMore);
+            console.log('Expanded previous message with search ID', searchId);
+        } else if (action === 'save_location') {
+            const locationName = payload.actions[0].value;
+            savedLocations.save(payload.user.id, locationName, previousResponse.searchResult.parsedCriteria.location);
+            res.send('');
+            console.log('Saved location for user', {
+                locationName,
+                locationObject: previousResponse.searchResult.parsedCriteria.location,
+                user: payload.user,
+            });
+        } else {
+            res.send('');
+            console.log('Unexpected message interaction', {action: action, searchId});
+        }
     } else {
+        res.send('');
         console.error('Unexpected callback ID', payload.callbackId);
     }
-
-    slackMessageInteractions.save(payload);
 }
 
 app.post('/message-interactions', function(req, res) {

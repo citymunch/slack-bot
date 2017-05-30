@@ -10,6 +10,7 @@ const searchQueries = require('./search-queries');
 const utils = require('../utils');
 const errors = require('./errors');
 const guid = require('guid');
+const savedLocations = require('./saved-locations');
 
 const MIXED_REGEX = new RegExp(/.+ (in|around|near) .+/, 'i');
 const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
@@ -92,6 +93,25 @@ async function parseSingle(text, userId) {
         return result;
     }
 
+    if (userId) {
+        // Match 'home' and 'work'.
+        if (savedLocations.isOption(normalizedText)) {
+            const savedLocation = await savedLocations.getSavedLocation(normalizedText, userId);
+            if (savedLocation) {
+                result.location = savedLocation.locationObject;
+                return result;
+            }
+        }
+        // Match 'near home' and 'near work'.
+        if (normalizedText.indexOf('near ') === 0 && savedLocations.isOption(normalizedText.substring(5))) {
+            const savedLocation = await savedLocations.getSavedLocation(normalizedText.substring(5), userId);
+            if (savedLocation) {
+                result.location = savedLocation.locationObject;
+                return result;
+            }
+        }
+    }
+
     if (LOCATION_NEAR_ME_TEXTS.indexOf(normalizedText) !== -1) {
         const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId, utils.getDateNHoursAgo(6));
         if (latestLocationForSameUser) {
@@ -172,8 +192,20 @@ async function parseMixed(text, userId) {
         throw new Error('Could not parse text: ' + text);
     }
 
+    const normalizedLocationText = utils.normalizeSearchInput(locationText);
+
+    if (userId) {
+        // Match 'near home' and 'around work'.
+        const savedLocation = await savedLocations.getSavedLocation(normalizedLocationText, userId);
+        if (savedLocation) {
+            console.log('Adopted location from user\'s saved location', normalizedLocationText, savedLocation.locationObject);
+            result.location = savedLocation.locationObject;
+            return result;
+        }
+    }
+
     // Match 'near me' and 'around me'.
-    if (utils.normalizeSearchInput(locationText) === 'me') {
+    if (normalizedLocationText === 'me') {
         const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId, utils.getDateNHoursAgo(6));
         if (latestLocationForSameUser) {
             console.log('Adopted location from last search by same user', latestLocationForSameUser);

@@ -2,6 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const searchQueries = require('../../src/citymunch/search-queries');
 const searcher = require('../../src/citymunch/searcher');
+const savedLocations = require('../../src/citymunch/saved-locations');
 const parse = searcher.parse;
 const search = searcher.search;
 const errors = require('../../src/citymunch/errors');
@@ -277,7 +278,6 @@ describe('Searcher', () => {
 
             parse('around me', userId)
                 .then(result => {
-                    console.log('result', result);
                     if (result.location.name === 'Angel') {
                         done();
                     } else {
@@ -313,6 +313,74 @@ describe('Searcher', () => {
                         done(new Error('Error is not an instance of UserNeedsToSayWhereTheyAreError'));
                     }
                 });
+        });
+    });
+
+    describe('parse() given a saved location', () => {
+        it('should use the user\'s saved "home" location given query "home"', (done) => {
+            const userId = 'user-with-saved-home-' + Date.now();
+
+            // Insert a previous search result with a location and the same user ID, which should
+            // be found and re-used.
+            savedLocations.save(
+                userId,
+                'home',
+                {name: 'Angel', types: ['ADMINISTRATIVE_AREA_LEVEL_2']}
+            );
+
+            parse('home', userId)
+                .then(result => {
+                    if (result.location.name === 'Angel') {
+                        done();
+                    } else {
+                        done(new Error('Didn\'t get the user\'s saved "home" location'));
+                    }
+                })
+                .catch(done);
+        });
+
+        it('should use the user\'s saved "work" location given query "near work"', (done) => {
+            const userId = 'user-with-saved-work-' + Date.now();
+
+            // Insert a previous search result with a location and the same user ID, which should
+            // be found and re-used.
+            savedLocations.save(
+                userId,
+                'work',
+                {name: 'EC2A', types: ['POSTCODE_DISTRICT']}
+            );
+
+            parse('near work', userId)
+                .then(result => {
+                    if (result.location.name === 'EC2A') {
+                        done();
+                    } else {
+                        done(new Error('Didn\'t get the user\'s saved "work" location'));
+                    }
+                })
+                .catch(done);
+        });
+
+        it('should use the user\'s saved "work" location given query "chinese near work"', (done) => {
+            const userId = 'user-with-saved-work-' + Date.now();
+
+            // Insert a previous search result with a location and the same user ID, which should
+            // be found and re-used.
+            savedLocations.save(
+                userId,
+                'work',
+                {name: 'EC2A', types: ['POSTCODE_DISTRICT']}
+            );
+
+            parse('chinese near work', userId)
+                .then(result => {
+                    if (result.location.name === 'EC2A' && result.cuisineType === 'Chinese') {
+                        done();
+                    } else {
+                        done(new Error('Didn\'t get the user\'s saved "work" location or parse the cuisine type'));
+                    }
+                })
+                .catch(done);
         });
     });
 
