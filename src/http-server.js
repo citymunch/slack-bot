@@ -148,7 +148,7 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
 
         let message;
         if (error instanceof errors.UserNeedsToSayWhereTheyAreError) {
-            message = 'Where are you?';
+            message = 'Where are you? Reply with "/citymunch (your postcode or street name)"';
         } else {
             message = getUserFriendlyErrorMessage(error, query);
         }
