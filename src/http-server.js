@@ -100,6 +100,10 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
             text: result.message,
             attachments: [
                 {
+                    // These empty strings are needed -- otherwise Slack won't show the action
+                    // buttons sent to a delayed response URL.
+                    text: '',
+                    fallback: '',
                     callback_id: 'search_result_' + result.searchId,
                     color: '#38b471',
                     attachment_type: 'default',
@@ -135,11 +139,8 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
             }
         }
 
-        // Respond immediately, instead of using the hook response URL, because delayed responses
-        // to the hook URL don't show the original user's "/citymunch [query]" message in the
-        // channel.
-        httpResponse.send(messageResponse);
-
+        httpResponse.send({response_type: 'in_channel'});
+        slackApi.postToHookUrl(responseUrl, messageResponse);
         slackResponses.save({query, text: messageResponse.text, searchResult: result});
     } catch (error) {
         console.log('Error searching and responding to query:', error);

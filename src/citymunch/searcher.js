@@ -17,6 +17,8 @@ const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
 
 const LOCATION_NEAR_ME_TEXTS = ['near me', 'around me', 'here'];
 
+const TEN_PM = LocalTime.of('22:00');
+
 function createEmptyParseResult() {
     return {
         // A string of the cuisine type name.
@@ -134,18 +136,18 @@ async function parseSingle(text, userId) {
         }
     }
 
-    // If the user has searched for a location previously, assume that location.
-    if (!result.location && userId) {
-        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
-        if (latestLocationForSameUser) {
-            console.log('Adopted location from last search by same user', latestLocationForSameUser);
-            result.location = latestLocationForSameUser;
-            result.isLocationFromHistory = true;
-            return result;
-        }
-    }
-
     if (result.cuisineType || result.startTime || result.endTime) {
+        // If the user has searched for a location previously, assume that location.
+        if (!result.location && userId) {
+            const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
+            if (latestLocationForSameUser) {
+                console.log('Adopted location from last search by same user', latestLocationForSameUser);
+                result.location = latestLocationForSameUser;
+                result.isLocationFromHistory = true;
+                return result;
+            }
+        }
+
         return result;
     }
 
@@ -378,32 +380,68 @@ async function search(text, userId) {
         }
     });
 
-    const onNow = events.filter(event => event.event.hasStarted);
-    const onLater = events.filter(event => !event.event.hasStarted);
+    const now = LocalTime.now();
+    const nextTwoHours = [];
+    const onLater = [];
+
+    events.forEach(event => {
+        if (event.event.hasStarted) {
+            nextTwoHours.push(event);
+            return;
+        }
+        const startTime = LocalTime.of(event.event.startTime);
+        if (event.event.isToday && startTime.compareTo(TEN_PM) >= 0 && now.compareTo(TEN_PM) >= 0) {
+            nextTwoHours.push(event);
+            return;
+        }
+        if (event.event.isToday && startTime.isBefore(TEN_PM) && now.addHours(2).compareTo(startTime) >= 0) {
+            nextTwoHours.push(event);
+            return;
+        }
+
+        onLater.push(event);
+    });
 
     if (hasWalkingDistances) {
-        onNow.sort((e1, e2) => e1.walkingDistance.distanceInMeters - e2.walkingDistance.distanceInMeters);
+        nextTwoHours.sort((e1, e2) => e1.walkingDistance.distanceInMeters - e2.walkingDistance.distanceInMeters);
         onLater.sort((e1, e2) => e1.walkingDistance.distanceInMeters - e2.walkingDistance.distanceInMeters);
     }
 
     let offerMessageParts = [];
 
-    let hasShowedOnNowHeader = false;
+    let hasShowedNextTwoHoursHeader = false;
     let hasShowedOnLaterHeader = false;
 
-    function buildMessageFromEvents(event) {
+    let nextTwoHoursOrLaterHeaderSuffix;
+    if (criteria.location) {
+        if (criteria.location.types[0] === 'ROUTE' || criteria.location.types[0] === 'POSTAL_CODE') {
+            nextTwoHoursOrLaterHeaderSuffix = 'near ' + criteria.location.name;
+        } else {
+            nextTwoHoursOrLaterHeaderSuffix = 'in ' + criteria.location.name;
+        }
+    }
+
+    function buildMessageFromEvent(event, inNextTwoHours) {
         const prettyStartTime = formatLocalTime(LocalTime.of(event.event.startTime));
         const prettyEndTime = formatLocalTime(LocalTime.of(event.event.endTime));
         const walkingDistance = getWalkingDistance(event.restaurant.id);
 
         let eventMessage = '';
 
-        if (event.event.hasStarted && !hasShowedOnNowHeader) {
-            eventMessage += '*ON NOW*:\n';
-            hasShowedOnNowHeader = true;
+        if (inNextTwoHours && !hasShowedNextTwoHoursHeader) {
+            eventMessage += '*Next two hours';
+            if (nextTwoHoursOrLaterHeaderSuffix) {
+                eventMessage += ' ' + nextTwoHoursOrLaterHeaderSuffix;
+            }
+            eventMessage += '*:\n';
+            hasShowedNextTwoHoursHeader = true;
         }
-        if (!event.event.hasStarted && !hasShowedOnLaterHeader) {
-            eventMessage += '*ON LATER*:\n';
+        if (!inNextTwoHours && !hasShowedOnLaterHeader) {
+            eventMessage += '*On later';
+            if (nextTwoHoursOrLaterHeaderSuffix) {
+                eventMessage += ' ' + nextTwoHoursOrLaterHeaderSuffix;
+            }
+            eventMessage += '*:\n';
             hasShowedOnLaterHeader = true;
         }
 
@@ -438,17 +476,14 @@ async function search(text, userId) {
         offerMessageParts.push(eventMessage);
     }
 
-    onNow.forEach(buildMessageFromEvents);
-    onLater.forEach(buildMessageFromEvents);
+    nextTwoHours.forEach(event => buildMessageFromEvent(event, true));
+    onLater.forEach(event => buildMessageFromEvent(event, false));
 
     let message = '';
     let messageAfterShowingMore = '';
 
     offerMessageParts = offerMessageParts.slice(0, 10);
 
-    if (criteria.isLocationFromHistory) {
-        message += `Searched near ${criteria.location.name}\n`;
-    }
     if (offerMessageParts.length > 3) {
         message += offerMessageParts.slice(0, 3).join('\n');
         messageAfterShowingMore += offerMessageParts.slice(3).join('\n');
