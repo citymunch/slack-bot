@@ -262,6 +262,8 @@ function calculateDistanceBetweenTwoCoordsInMeters(cord1, cord2) {
     return angularDistanceInRadians * EARTH_RADIUS_IN_METERS;
 }
 
+const MIN_SEARCH_AREA_IN_KILOMETERS = 1.2;
+
 /**
  * Resolves if there are upcoming events today.
  * Rejects if there is no upcoming event today.
@@ -285,14 +287,14 @@ async function search(text, userId) {
 
     if (criteria.location) {
         const isInAreaSearch = criteria.location.northeast && criteria.location.southwest &&
-            calculateDistanceBetweenTwoCoordsInMeters(criteria.location.northeast, criteria.location.southwest) >= 1000;
+            calculateDistanceBetweenTwoCoordsInMeters(criteria.location.northeast, criteria.location.southwest) >= (MIN_SEARCH_AREA_IN_KILOMETERS * 1000);
 
         if (isInAreaSearch) {
             url += `&northeastPoint=${commaSeperatePoint(criteria.location.northeast)}`
                 + `&southwestPoint=${commaSeperatePoint(criteria.location.southwest)}`;
         } else if (criteria.location.center) {
             url += `&nearPoint=${commaSeperatePoint(criteria.location.center)}`
-                + '&rangeInKilometers=1';
+                + '&rangeInKilometers=' + MIN_SEARCH_AREA_IN_KILOMETERS;
         } else {
             throw new Error('Unsure what to do with location: ' + JSON.stringify(criteria.location));
         }
