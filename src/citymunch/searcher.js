@@ -14,8 +14,21 @@ const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
 
 const LOCATION_NEAR_ME_TEXTS = ['near me', 'around me', 'here'];
 
+function createEmptyParseResult() {
+    return {
+        // A string of the cuisine type name.
+        cuisineType: null,
+        // An array of restaurant IDs.
+        restaurants: [],
+        // An object as returned from the geocoding API.
+        location: null,
+    };
+}
+
 /**
  * Resolves to an object if successful. Rejects if unsuccessful.
+ *
+ * The object resolved has a combination of the properties returned by `createEmptyParseResult`.
  *
  * @return {Promise}
  * @throws {UserNeedsToSayWhereTheyAreError}
@@ -45,11 +58,7 @@ async function parse(text, userId) {
  * @throws {UserNeedsToSayWhereTheyAreError}
  */
 async function parseSingle(text, userId) {
-    const result = {
-        cuisineType: null,
-        restaurants: [],
-        location: null,
-    };
+    const result = createEmptyParseResult();
 
     const restaurants = await searchHints.matchRestaurants(text);
     if (restaurants.length > 0) {
@@ -107,11 +116,7 @@ async function parseSingle(text, userId) {
  * @throws {UserNeedsToSayWhereTheyAreError}
  */
 async function parseMixed(text, userId) {
-    const result = {
-        cuisineType: null,
-        restaurants: [],
-        location: null,
-    };
+    const result = createEmptyParseResult();
 
     const parts = text.split(MIXED_SPLIT_REGEX);
     const cuisineOrRestaurantText = parts[0];
@@ -254,8 +259,8 @@ async function search(text, userId) {
     const activeEventsRespones = await cmApi.get(
         '/offers/search/active-events-by-restaurant-ids?ids=' + restaurantIds.join(',') +
         '&includeEnded=false' +
-        `&startDate=${today.toString()}` +
-        `&endDate=${today.toString()}`
+        '&startDate=' + today.toString() +
+        '&endDate=' + today.toString()
     );
 
     const events = activeEventsRespones.events
@@ -352,6 +357,7 @@ function formatLocalTime(localTime) {
 }
 
 module.exports = {
+    // `parse` is only exported for testing.
     parse,
     search,
 };
