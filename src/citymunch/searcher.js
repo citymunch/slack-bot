@@ -307,6 +307,9 @@ async function search(text, userId) {
         throw new Error('We couldn\'t find anything matching that search right now');
     }
 
+    /**
+     * @return {Object|null}
+     */
     function getWalkingDistance(restaurantId) {
         const matches = authorisedRestaurantsResponse.results.filter(result => {
             return result.restaurant.id === restaurantId;
@@ -317,7 +320,7 @@ async function search(text, userId) {
         if (!matches[0].walkingDistance) {
             return null;
         }
-        return matches[0].walkingDistance.durationText;
+        return matches[0].walkingDistance;
     }
 
     const restaurantIds = authorisedRestaurantsResponse.results.map(result => result.restaurant.id);
@@ -362,6 +365,21 @@ async function search(text, userId) {
         }
     }
 
+    // Walking distance should be available if the search was by a street name or full postcode, and
+    // not if the search was by a locality.
+    let hasWalkingDistances = false;
+    events.forEach(event => {
+        event.walkingDistance = getWalkingDistance(event.restaurant.id);
+        if (event.walkingDistance) {
+            hasWalkingDistances = true;
+        }
+    });
+
+    if (hasWalkingDistances) {
+        events.sort((e1, e2) => e1.walkingDistance.distanceInMeters - e2.walkingDistance.distanceInMeters);
+    }
+
+
     let message = '';
     let messageAfterShowingMore = '';
 
@@ -379,7 +397,7 @@ async function search(text, userId) {
         }
 
         if (walkingDistance) {
-            eventMessage += ` (${walkingDistance} away)`;
+            eventMessage += ` (${walkingDistance.durationText} away)`;
         }
 
         if (event.event.coversRemaining === 0) {
