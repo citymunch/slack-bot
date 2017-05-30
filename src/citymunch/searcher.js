@@ -76,7 +76,6 @@ async function parseSingle(text, userId) {
     const cuisineType = await searchHints.matchCuisineType(text);
     if (cuisineType !== false) {
         result.cuisineType = cuisineType;
-        return result;
     }
 
     const normalizedText = utils.normalizeSearchInput(text);
@@ -84,13 +83,11 @@ async function parseSingle(text, userId) {
     if (normalizedText === 'dinner') {
         result.startTime = LocalTime.of('17:00');
         result.endTime = LocalTime.of('20:30');
-        return result;
     }
 
     if (normalizedText === 'lunch') {
         result.startTime = LocalTime.of('12:00');
         result.endTime = LocalTime.of('14:30');
-        return result;
     }
 
     if (userId) {
@@ -99,6 +96,7 @@ async function parseSingle(text, userId) {
             const savedLocation = await savedLocations.getSavedLocation(normalizedText, userId);
             if (savedLocation) {
                 result.location = savedLocation.locationObject;
+                result.isLocationFromHistory = true;
                 return result;
             }
         }
@@ -107,6 +105,7 @@ async function parseSingle(text, userId) {
             const savedLocation = await savedLocations.getSavedLocation(normalizedText.substring(5), userId);
             if (savedLocation) {
                 result.location = savedLocation.locationObject;
+                result.isLocationFromHistory = true;
                 return result;
             }
         }
@@ -117,6 +116,7 @@ async function parseSingle(text, userId) {
         if (latestLocationForSameUser) {
             console.log('Adopted location from last search by same user', latestLocationForSameUser);
             result.location = latestLocationForSameUser;
+            result.isLocationFromHistory = true;
             return result;
         } else {
             console.log('Asking the user where they are');
@@ -134,23 +134,22 @@ async function parseSingle(text, userId) {
         }
     }
 
-    // If only a cuisine type was searched for, without a location, and the user has searched for a
-    // location previously, assume that location.
-    if (result.cuisineType && !result.location) {
-        if (userId) {
-            const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
-            if (latestLocationForSameUser) {
-                console.log('Adopted location from last search by same user', latestLocationForSameUser);
-                result.location = latestLocationForSameUser;
-            }
+    // If the user has searched for a location previously, assume that location.
+    if (!result.location && userId) {
+        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
+        if (latestLocationForSameUser) {
+            console.log('Adopted location from last search by same user', latestLocationForSameUser);
+            result.location = latestLocationForSameUser;
+            result.isLocationFromHistory = true;
+            return result;
         }
-        return result;
-    // } else if (result.cuisineType && result.location) {
-    //     return result;
-    } else {
-        // No location and no cuisine type - give up.
-        throw new Error('Could not parse text: ' + text);
     }
+
+    if (result.cuisineType || result.startTime || result.endTime) {
+        return result;
+    }
+
+    throw new Error('Could not parse text: ' + text);
 }
 
 /**
@@ -200,6 +199,7 @@ async function parseMixed(text, userId) {
         if (savedLocation) {
             console.log('Adopted location from user\'s saved location', normalizedLocationText, savedLocation.locationObject);
             result.location = savedLocation.locationObject;
+            result.isLocationFromHistory = true;
             return result;
         }
     }
@@ -210,6 +210,7 @@ async function parseMixed(text, userId) {
         if (latestLocationForSameUser) {
             console.log('Adopted location from last search by same user', latestLocationForSameUser);
             result.location = latestLocationForSameUser;
+            result.isLocationFromHistory = true;
             return result;
         } else {
             console.log('Asking the user where they are');
@@ -377,21 +378,36 @@ async function search(text, userId) {
         }
     });
 
+    const onNow = events.filter(event => event.event.hasStarted);
+    const onLater = events.filter(event => !event.event.hasStarted);
+
     if (hasWalkingDistances) {
-        events.sort((e1, e2) => e1.walkingDistance.distanceInMeters - e2.walkingDistance.distanceInMeters);
+        onNow.sort((e1, e2) => e1.walkingDistance.distanceInMeters - e2.walkingDistance.distanceInMeters);
+        onLater.sort((e1, e2) => e1.walkingDistance.distanceInMeters - e2.walkingDistance.distanceInMeters);
     }
 
+    let offerMessageParts = [];
 
-    let message = '';
-    let messageAfterShowingMore = '';
+    let hasShowedOnNowHeader = false;
+    let hasShowedOnLaterHeader = false;
 
-    for (let i = 0; i < events.length; i++) {
-        const event = events[i];
+    function buildMessageFromEvents(event) {
         const prettyStartTime = formatLocalTime(LocalTime.of(event.event.startTime));
         const prettyEndTime = formatLocalTime(LocalTime.of(event.event.endTime));
         const walkingDistance = getWalkingDistance(event.restaurant.id);
 
-        let eventMessage = `${event.event.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
+        let eventMessage = '';
+
+        if (event.event.hasStarted && !hasShowedOnNowHeader) {
+            eventMessage += '*ON NOW*:\n';
+            hasShowedOnNowHeader = true;
+        }
+        if (!event.event.hasStarted && !hasShowedOnLaterHeader) {
+            eventMessage += '*ON LATER*:\n';
+            hasShowedOnLaterHeader = true;
+        }
+
+        eventMessage += `${event.event.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
 
         if (!event.event.isToday) {
             const prettyDate = formatLocalDate(LocalDate.of(event.event.date));
@@ -417,13 +433,28 @@ async function search(text, userId) {
         eventMessage += '\n';
         eventMessage += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
 
-        if (i <= 2) {
-            message += eventMessage;
-        } else if (i <= 9) {
-            messageAfterShowingMore += eventMessage;
-        }
+        eventMessage = eventMessage.trim();
+
+        offerMessageParts.push(eventMessage);
     }
-    message = message.trim();
+
+    onNow.forEach(buildMessageFromEvents);
+    onLater.forEach(buildMessageFromEvents);
+
+    let message = '';
+    let messageAfterShowingMore = '';
+
+    offerMessageParts = offerMessageParts.slice(0, 10);
+
+    if (criteria.isLocationFromHistory) {
+        message += `Searched near ${criteria.location.name}\n`;
+    }
+    if (offerMessageParts.length > 3) {
+        message += offerMessageParts.slice(0, 3).join('\n');
+        messageAfterShowingMore += offerMessageParts.slice(3).join('\n');
+    } else {
+        message += offerMessageParts.join('\n');
+    }
 
     return {
         parsedCriteria: criteria,
