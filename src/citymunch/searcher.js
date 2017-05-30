@@ -73,7 +73,7 @@ async function parseSingle(text, userId) {
     }
 
     if (LOCATION_NEAR_ME_TEXTS.indexOf(utils.normalizeSearchInput(text)) !== -1) {
-        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
+        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId, utils.getDateNHoursAgo(6));
         if (latestLocationForSameUser) {
             console.log('Adopted location from last search by same user', latestLocationForSameUser);
             result.location = latestLocationForSameUser;
@@ -140,8 +140,9 @@ async function parseMixed(text, userId) {
         throw new Error('Could not parse text: ' + text);
     }
 
+    // Match 'near me' and 'around me'.
     if (utils.normalizeSearchInput(locationText) === 'me') {
-        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId);
+        const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId, utils.getDateNHoursAgo(6));
         if (latestLocationForSameUser) {
             console.log('Adopted location from last search by same user', latestLocationForSameUser);
             result.location = latestLocationForSameUser;

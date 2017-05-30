@@ -1,5 +1,6 @@
 const chai = require('chai');
 const expect = chai.expect;
+const searchQueries = require('../../src/citymunch/search-queries');
 const searcher = require('../../src/citymunch/searcher');
 const parse = searcher.parse;
 const search = searcher.search;
@@ -202,8 +203,33 @@ describe('Searcher', () => {
                 .then(() => done(new Error()))
                 .catch(() => done());
         });
+    });
 
-        it('should throw UserNeedsToSayWhereTheyAreError if given "around me" and no previous location for this user', (done) => {
+    describe('parse() given "near me" or "around me"', () => {
+        it('should use user\'s location within last 6 hours', (done) => {
+            const userId = 'user-with-previous-location-' + Date.now();
+
+            // Insert a previous search result with a location and the same user ID, which should
+            // be found and re-used.
+            searchQueries.save(
+                'Angel, London',
+                {location: {name: 'Angel', types: ['ADMINISTRATIVE_AREA_LEVEL_2']}},
+                userId
+            );
+
+            parse('around me', userId)
+                .then(result => {
+                    console.log('result', result);
+                    if (result.location.name === 'Angel') {
+                        done();
+                    } else {
+                        done(new Error('Didn\'t get the user\'s most recent location'));
+                    }
+                })
+                .catch(done);
+        });
+
+        it('should throw UserNeedsToSayWhereTheyAreError if no previous location for this user', (done) => {
             parse('around me', 'user' + Date.now())
                 .then(() => {
                     done(new Error('Got a result when an error should have been thrown'))
@@ -217,7 +243,7 @@ describe('Searcher', () => {
                 });
         });
 
-        it('should throw UserNeedsToSayWhereTheyAreError if given a cuisine and "near me" and no previous location for this user', (done) => {
+        it('should throw UserNeedsToSayWhereTheyAreError if given a cuisine and no previous location for this user', (done) => {
             parse('chinese near me', 'user' + Date.now())
                 .then(() => {
                     done(new Error('Got a result when an error should have been thrown'))
