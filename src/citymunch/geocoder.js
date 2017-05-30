@@ -25,6 +25,7 @@ async function geocode(text) {
 
             const result = response.geometry;
             result.isFullPostcode = FULL_POSTCODE_REGEX.test(text);
+            result.isStreet = response.geometry.types && response.geometry.types.length === 1 && response.geometry.types[0] === 'ROUTE';
             return result;
         });
 }

@@ -161,6 +161,10 @@ describe('Searcher', () => {
             expectLocation('islington', 'London Borough of Islington', done);
         });
 
+        it('should understand street names like Danbury Street', (done) => {
+            expectLocation('Danbury Street', 'Danbury St', done);
+        });
+
         it('should disregard conversational cues like "in"', (done) => {
             expectLocation('in soho', 'Soho', done);
         });

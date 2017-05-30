@@ -297,7 +297,7 @@ async function search(text, userId) {
             throw new Error('Unsure what to do with location: ' + JSON.stringify(criteria.location));
         }
 
-        if (criteria.location.isFullPostcode && criteria.location.center) {
+        if ((criteria.location.isFullPostcode || criteria.location.isStreet) && criteria.location.center) {
             url += `&userPoint=${commaSeperatePoint(criteria.location.center)}`;
         }
     }
