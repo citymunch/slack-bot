@@ -285,7 +285,7 @@ async function search(text, userId) {
 
     if (criteria.location) {
         const isInAreaSearch = criteria.location.northeast && criteria.location.southwest &&
-            calculateDistanceBetweenTwoCoordsInMeters(criteria.location.northeast, criteria.location.southwest) > 300;
+            calculateDistanceBetweenTwoCoordsInMeters(criteria.location.northeast, criteria.location.southwest) >= 1000;
 
         if (isInAreaSearch) {
             url += `&northeastPoint=${commaSeperatePoint(criteria.location.northeast)}`
