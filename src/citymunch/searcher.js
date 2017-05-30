@@ -23,6 +23,10 @@ function createEmptyParseResult() {
         restaurants: [],
         // An object as returned from the geocoding API.
         location: null,
+        // A `LocalTime` object.
+        startTime: null,
+        // A `LocalTime` object.
+        endTime: null,
     };
 }
 
@@ -70,9 +74,24 @@ async function parseSingle(text, userId) {
     const cuisineType = await searchHints.matchCuisineType(text);
     if (cuisineType !== false) {
         result.cuisineType = cuisineType;
+        return result;
     }
 
-    if (LOCATION_NEAR_ME_TEXTS.indexOf(utils.normalizeSearchInput(text)) !== -1) {
+    const normalizedText = utils.normalizeSearchInput(text);
+
+    if (normalizedText === 'dinner') {
+        result.startTime = localDateTime.LocalTime.of('17:00');
+        result.endTime = localDateTime.LocalTime.of('20:30');
+        return result;
+    }
+
+    if (normalizedText === 'lunch') {
+        result.startTime = localDateTime.LocalTime.of('12:00');
+        result.endTime = localDateTime.LocalTime.of('14:30');
+        return result;
+    }
+
+    if (LOCATION_NEAR_ME_TEXTS.indexOf(normalizedText) !== -1) {
         const latestLocationForSameUser = await searchQueries.findLatestLocationByUserId(userId, utils.getDateNHoursAgo(6));
         if (latestLocationForSameUser) {
             console.log('Adopted location from last search by same user', latestLocationForSameUser);
@@ -120,20 +139,32 @@ async function parseMixed(text, userId) {
     const result = createEmptyParseResult();
 
     const parts = text.split(MIXED_SPLIT_REGEX);
-    const cuisineOrRestaurantText = parts[0];
+    const cuisineOrRestaurantOrTimeText = parts[0];
     const locationText = parts[2];
 
-    const cuisineType = await searchHints.matchCuisineType(cuisineOrRestaurantText);
+    const cuisineType = await searchHints.matchCuisineType(cuisineOrRestaurantOrTimeText);
     if (cuisineType !== false) {
         result.cuisineType = cuisineType;
     }
 
-    const restaurants = await searchHints.matchRestaurants(cuisineOrRestaurantText);
+    const restaurants = await searchHints.matchRestaurants(cuisineOrRestaurantOrTimeText);
     if (restaurants.length > 0) {
         result.restaurants = restaurants;
     }
 
-    if (!result.cuisineType && result.restaurants.length === 0) {
+    const normalizedCuisineOrRestaurantOrTimeText = utils.normalizeSearchInput(cuisineOrRestaurantOrTimeText);
+
+    if (normalizedCuisineOrRestaurantOrTimeText === 'dinner') {
+        result.startTime = localDateTime.LocalTime.of('17:00');
+        result.endTime = localDateTime.LocalTime.of('20:30');
+    }
+
+    if (normalizedCuisineOrRestaurantOrTimeText === 'lunch') {
+        result.startTime = localDateTime.LocalTime.of('12:00');
+        result.endTime = localDateTime.LocalTime.of('14:30');
+    }
+
+    if (!result.cuisineType && result.restaurants.length === 0 && !result.startTime && !result.endTime) {
         // Prevent something like "prawns in London" searching only for London with no cuisine,
         // because the user wanted prawns (not a CityMunch cuisine) but might get Italian if only
         // location is used.

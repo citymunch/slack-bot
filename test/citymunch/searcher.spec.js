@@ -177,6 +177,40 @@ describe('Searcher', () => {
         });
     });
 
+    describe('parse() for times', () => {
+        function expectTime(input, expectedStartTime, expectedEndTime, done) {
+            parse(input).then(result => {
+                if (result.cuisineType !== null) {
+                    return done(new Error('Cuisine type returned'));
+                }
+
+                if (result.restaurants.length > 0) {
+                    return done(new Error('Restaurants returned'));
+                }
+
+                if (result.location !== null) {
+                    return done(new Error('Location returned'));
+                }
+
+                if (result.startTime.toString() !== expectedStartTime || result.endTime.toString() !== expectedEndTime) {
+                    return done(new Error('Time was not correctly returned'));
+                }
+
+                done();
+            }).catch(error => {
+                done(error);
+            });
+        }
+
+        it('should understand "lunch"', (done) => {
+            expectTime('LUNCH', '12:00', '14:30', done);
+        });
+
+        it('should understand "dinner"', (done) => {
+            expectTime('dinner.', '17:00', '20:30', done);
+        });
+    });
+
     describe('parse() given mixed text', () => {
         it('should support a mixed cuisine type and location', (done) => {
             parse('chinese food in old street please.')
@@ -198,7 +232,31 @@ describe('Searcher', () => {
                 .catch(done);
         });
 
-        it('should throw if only a location is understood, without a cuisine or restaurant', (done) => {
+        it('should support "dinner" and location', (done) => {
+            parse('dinner in old street please')
+                .then(result => {
+                    if (result.restaurants.length > 0) {
+                        return done(new Error('Restaurants were wrongly returned'));
+                    }
+
+                    if (result.cuisineType) {
+                        return done(new Error('Cuisine was wrongly returned'));
+                    }
+
+                    if (result.startTime.toString() !== '17:00' || result.endTime.toString() !== '20:30') {
+                        return done(new Error('Time was not correctly returned'));
+                    }
+
+                    if (result.location.name !== 'London EC2A') {
+                        return done(new Error('London EC2A was not returned'));
+                    }
+
+                    done();
+                })
+                .catch(done);
+        });
+
+        it('should throw if only a location is understood, without a cuisine or restaurant or time', (done) => {
             parse('blobblesquid near old street')
                 .then(() => done(new Error()))
                 .catch(() => done());
