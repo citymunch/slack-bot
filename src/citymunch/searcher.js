@@ -290,14 +290,22 @@ async function search(text, userId) {
 
     const restaurantIds = authorisedRestaurantsResponse.results.map(result => result.restaurant.id);
     const today = LocalDate.today();
-    const activeEventsRespones = await cmApi.get(
-        '/offers/search/active-events-by-restaurant-ids?ids=' + restaurantIds.join(',') +
+
+    let activeEventsUrl = '/offers/search/active-events-by-restaurant-ids?ids=' + restaurantIds.join(',') +
         '&includeEnded=false' +
         '&startDate=' + today.toString() +
-        '&endDate=' + today.toString()
-    );
+        '&endDate=' + today.toString();
 
-    const events = activeEventsRespones.events
+    if (criteria.startTime) {
+        activeEventsUrl += '&startTime=' + criteria.startTime.toString();
+    }
+    if (criteria.endTime) {
+        activeEventsUrl += '&endTime=' + criteria.endTime.toString();
+    }
+
+    const activeEventsResponse = await cmApi.get(activeEventsUrl);
+
+    const events = activeEventsResponse.events
         .filter(event => event.event.isActiveOnDate)
         .filter(event => !event.event.hasEnded);
 
