@@ -445,7 +445,13 @@ async function search(text, userId) {
             hasShowedOnLaterHeader = true;
         }
 
-        eventMessage += `${event.event.discount}% off at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
+        eventMessage += `${event.event.discount}% off`;
+
+        if (event.offer.itemName) {
+            eventMessage += ` *${event.offer.itemName}*`;
+        }
+
+        eventMessage += ` at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
 
         if (!event.event.isToday) {
             const prettyDate = utils.formatLocalDate(LocalDate.of(event.event.date));
