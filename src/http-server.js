@@ -317,11 +317,17 @@ async function handleMessageInteraction(payload, res) {
         }
     } else if (payload.callbackId === 'enable_daily_notifications') {
         dailyNotifications.enableDailyNotifications(payload.user.id);
-        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'Great, we\'ll message you at 11am, every weekday!');
+        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'Smart move. We\'ll deliver the goods at 11am, every weekday!');
         res.send('');
     } else if (payload.callbackId === 'disable_daily_notifications') {
         dailyNotifications.disableDailyNotifications(payload.user.id);
-        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'We\'ve cancelled your daily notifications.');
+        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'You\'ll regret that.', [
+            {
+                text: '',
+                fallback: '',
+                image_url: 'https://slackbot.citymunchapp.com/static/go-away.gif',
+            }
+        ]);
         res.send('');
     } else {
         res.send('');
@@ -346,6 +352,13 @@ app.get('/successfully-installed', function(req, res) {
     fs.readFile('static/successfully-installed.html', (err, html) => {
         res.type('html');
         res.send(html);
+    });
+});
+
+app.get('/static/go-away.gif', function(req, res) {
+    fs.readFile('static/go-away.gif', (err, image) => {
+        res.type('image/gif');
+        res.send(image);
     });
 });
 
