@@ -36,7 +36,15 @@ function findLatestLocationByUserId(userId, since = null) {
         });
 }
 
+/**
+ * @return {Promise} Resolves to a number.
+ */
+async function countSearchesByUser(userId) {
+    return SearchQueryModel.count({userId});
+}
+
 module.exports = {
     save,
     findLatestLocationByUserId,
+    countSearchesByUser,
 };
