@@ -13,6 +13,7 @@ const slackSlashCommands = require('./slack/slash-commands');
 const slackTeams = require('./slack/teams');
 const errors = require('./citymunch/errors');
 const savedLocations = require('./citymunch/saved-locations');
+const dailyNotifications = require('./citymunch/daily-notifications');
 
 const app = express();
 
@@ -152,6 +153,10 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
         httpResponse.send({response_type: 'in_channel'});
         slackApi.postToHookUrl(responseUrl, messageResponse);
         slackResponses.save({query, text: messageResponse.text, searchResult: result});
+
+        if (result.parsedCriteria.location) {
+            dailyNotifications.checkIfUserShouldBePromptedToGetDailyNotifications(userId);
+        }
     } catch (error) {
         console.log('Error searching and responding to query:', error);
 
@@ -310,6 +315,13 @@ async function handleMessageInteraction(payload, res) {
             res.send('');
             console.log('Unexpected message interaction', {action: action, searchId});
         }
+    } else if (payload.callbackId === 'enable_daily_notifications') {
+        dailyNotifications.enableDailyNotifications(payload.user.id);
+        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'Great, we\'ll message you at 11am, Monday-Friday!');
+        res.send('');
+    } else if (payload.callbackId === 'disable_daily_notifications') {
+        dailyNotifications.disableDailyNotifications(payload.user.id);
+        res.send('');
     } else {
         res.send('');
         console.error('Unexpected callback ID', payload.callbackId);
