@@ -127,7 +127,7 @@ describe('Searcher', () => {
                 }
 
                 if (result.location.name !== expected) {
-                    return done(new Error('Unexpected location returned: ' + result.location.name));
+                    return done(new Error('Unexpected location returned: ' + result.location.name + ', had expected: ' + expected));
                 }
 
                 done();
@@ -150,11 +150,11 @@ describe('Searcher', () => {
         });
 
         it('should understand major locality names like Old Street', (done) => {
-            expectLocation('Old Street', 'London EC2A', done);
+            expectLocation('Old Street', 'Old St', done);
         });
 
         it('should understand major locality names like Old Street ignoring case', (done) => {
-            expectLocation('old st', 'London EC2A', done);
+            expectLocation('old st', 'Old St', done);
         });
 
         it('should understand major locality names like Islington', (done) => {
@@ -228,8 +228,8 @@ describe('Searcher', () => {
                         return done(new Error('Chinese cuisine was not returned'));
                     }
 
-                    if (result.location.name !== 'London EC2A') {
-                        return done(new Error('London EC2A was not returned'));
+                    if (result.location.name !== 'Old St') {
+                        return done(new Error('Old St was not returned, got: ' + result.location.name));
                     }
 
                     done();
@@ -252,8 +252,8 @@ describe('Searcher', () => {
                         return done(new Error('Time was not correctly returned'));
                     }
 
-                    if (result.location.name !== 'London EC2A') {
-                        return done(new Error('London EC2A was not returned'));
+                    if (result.location.name !== 'Old St') {
+                        return done(new Error('Old St was not returned, got: ' + result.location.name));
                     }
 
                     done();
