@@ -276,7 +276,17 @@ const MIN_SEARCH_AREA_IN_KILOMETERS = 1.2;
  */
 async function search(text, userId) {
     const criteria = await parse(text, userId);
+    return searchByCriteria(criteria);
+}
 
+/**
+ * Resolves if there are upcoming events today.
+ * Rejects if there is no upcoming event today.
+ *
+ * @return {Promise}
+ * @throws {UserNeedsToSayWhereTheyAreError}
+ */
+async function searchByCriteria(criteria) {
     let url = '/restaurants/search/authorised-restaurants?';
 
     if (criteria.cuisineType) {
@@ -511,4 +521,6 @@ module.exports = {
     // `parse` is only exported for testing.
     parse,
     search,
+    searchByCriteria,
+    createEmptyParseResult,
 };

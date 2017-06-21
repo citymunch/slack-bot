@@ -8,6 +8,10 @@ const teams = require('../slack/teams');
 const DailyNotificationModel = mongoose.model('daily_notifications', new mongoose.Schema({}, {strict: false}));
 const DirectMessageModel = mongoose.model('direct_messages', new mongoose.Schema({}, {strict: false}));
 
+function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+}
+
 async function sendDirectMessageToUser(userId, message, attachments = []) {
     const team = await teams.findTeamWithUser(userId);
     if (!team) {
@@ -20,7 +24,6 @@ async function sendDirectMessageToUser(userId, message, attachments = []) {
         channel: userId,
         text: message,
         attachments: JSON.stringify(attachments),
-        parse: 'full',
         link_names: false,
         unfurl_links: false,
         unfurl_media: false,
@@ -45,6 +48,18 @@ async function sendDirectMessageToUser(userId, message, attachments = []) {
  */
 async function hasNotificationsEnabled(userId) {
     return DailyNotificationModel.count({userId, status: 'ENABLED'}) > 0;
+}
+
+/**
+ * @return {Promise} Resolves to an array of user IDs.
+ */
+async function findUsersWithDailyNotificationsEnabled() {
+    return DailyNotificationModel.find({status: 'ENABLED'})
+        .then(users => {
+            return users.map(user => user.toObject())
+                .map(user => user.userId)
+                .filter(onlyUnique);
+        });
 }
 
 /**
@@ -111,6 +126,7 @@ module.exports = {
     checkIfUserShouldBePromptedToGetDailyNotifications,
     enableDailyNotifications,
     disableDailyNotifications,
+    findUsersWithDailyNotificationsEnabled,
     // Exported only for tests:
     sendDirectMessageToUser,
     promptToEnableNotifications,

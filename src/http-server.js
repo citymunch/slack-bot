@@ -317,10 +317,11 @@ async function handleMessageInteraction(payload, res) {
         }
     } else if (payload.callbackId === 'enable_daily_notifications') {
         dailyNotifications.enableDailyNotifications(payload.user.id);
-        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'Great, we\'ll message you at 11am, Monday-Friday!');
+        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'Great, we\'ll message you at 11am, every weekday!');
         res.send('');
     } else if (payload.callbackId === 'disable_daily_notifications') {
         dailyNotifications.disableDailyNotifications(payload.user.id);
+        dailyNotifications.sendDirectMessageToUser(payload.user.id, 'We\'ve cancelled your daily notifications.');
         res.send('');
     } else {
         res.send('');

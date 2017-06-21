@@ -36,3 +36,5 @@ Set up the Git pre-commit hook to prevent committing some mistakes:
 ```
 ln -s ../../bin/pre-commit .git/hooks/pre-commit
 ```
+
+An daily cron must be set up to run `daily-notifications-cron.js`.

@@ -17,7 +17,7 @@ function save(unparsedCriteria, parsedCriteria, userId) {
  * @return {Promise} Resolves to a location object if a location is found.
  *                   Resolves to null if no location found.
  */
-function findLatestLocationByUserId(userId, since = null) {
+async function findLatestLocationByUserId(userId, since = null) {
     const criteria = {
         userId,
         'parsedCriteria.location': {$ne: null},
