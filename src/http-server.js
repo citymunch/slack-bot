@@ -92,6 +92,16 @@ function getUserFriendlyErrorMessage(error, query) {
  * Responds to /citymunch.
  */
 async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, responseUrl, userId) {
+    if (query.trim() === '') {
+        console.log('Empty query given');
+        httpResponse.send('');
+        slackApi.postToHookUrl(responseUrl, {
+            response_type: 'ephemeral',
+            text: 'Where are you? Reply with "/citymunch (your postcode or street name)"',
+        });
+        return;
+    }
+
     try {
         const result = await searcher.search(query, userId);
 
