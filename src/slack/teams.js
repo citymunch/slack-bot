@@ -2,6 +2,7 @@
 
 const mongoose = require('../db');
 const slackApi = require('./api');
+const events = require('./events');
 
 const TeamModel = mongoose.model('teams', new mongoose.Schema({}, {strict: false}));
 
@@ -33,6 +34,17 @@ async function findTeam(id) {
 }
 
 /**
+ * @return {Promise} Resolves to a team object if found. Rejects if not found.
+ */
+async function findTeamWithUser(userId) {
+    const eventWithUserId = await events.findOne({'event.user': userId, teamId: {$ne: null}});
+    if (!eventWithUserId) {
+        throw new Error('No event with user ID ' + userId);
+    }
+    return findTeam(eventWithUserId.teamId);
+}
+
+/**
  * @return {Promise}
  */
 async function postToChannel(team, channelId, message, attachments = []) {
@@ -56,4 +68,5 @@ module.exports = {
     saveTeam,
     findTeam,
     postToChannel,
+    findTeamWithUser,
 };

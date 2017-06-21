@@ -12,6 +12,18 @@ function save(details) {
     });
 }
 
+/**
+ * @return {Promise} Resolves to an object if found. Rejects otherwise.
+ */
+async function findOne(query) {
+    const event = await EventModel.findOne(query);
+    if (!event) {
+        throw new Error('Event not found by query');
+    }
+    return event.toObject();
+}
+
 module.exports = {
     save,
+    findOne,
 };
