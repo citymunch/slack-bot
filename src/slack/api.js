@@ -74,7 +74,7 @@ async function postToHookUrl(url, data) {
 
     console.log(`Slack API request: POST ${domain}${path}`);
 
-    const dataAsString = JSON.stringify(data);
+    const dataAsString = JSON.stringify(data).normalize();
 
     return new Promise(function(resolve, reject) {
         const options = {
