@@ -367,7 +367,7 @@ async function searchByCriteria(criteria) {
             for (let i = 0; i < criteria.restaurants.length; i++) {
                 const restaurant = criteria.restaurants[i];
                 message += `${restaurant.name} doesn\'t have any offers coming up today.\n`;
-                message += `<${config.urlShortener}/restaurant/${restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|View on CityMunch>\n`;
+                message += `<${config.urlShortener}/slack/${restaurant.id}|View on CityMunch>\n`;
             }
 
             return {
@@ -485,7 +485,7 @@ async function searchByCriteria(criteria) {
         }
 
         eventMessage += '\n';
-        eventMessage += `<${config.urlShortener}/restaurant/${event.restaurant.id}?utm_source=CM&utm_medium=SB&utm_content=TXT&utm_campaign=CB|Reserve voucher>\n`;
+        eventMessage += `<${config.urlShortener}/slack/${event.restaurant.id}|Reserve voucher>\n`;
 
         eventMessage = eventMessage.trim();
 
