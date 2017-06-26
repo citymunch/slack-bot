@@ -71,6 +71,7 @@ const EASTER_EGGS = {
     'what time is it?': () => localDateTime.LocalTime.now().toString(),
     'thanks': () => 'You\'re welcome',
     'thank you': () => 'You\'re welcome',
+    'i\'m hungry': () => 'Then check the app!',
 };
 
 function getInChannelPlainTextResponse(text) {
