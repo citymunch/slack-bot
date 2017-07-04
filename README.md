@@ -3,7 +3,7 @@ CityMunch Slack bot server
 
 This is the CityMunch Slack bot. Find lunch or dinner near you in your Slack channel, with a search like `/citymunch pizza in London` or `/citymunch bristol`.
 
-To install this into your Slack channel, [click here](https://slack.com/oauth/authorize?scope=incoming-webhook,commands,bot&client_id=32819966979.119364939408).
+To install this into your Slack channel, [click here](https://slack.com/oauth/authorize?scope=commands,bot&client_id=32819966979.119364939408).
 
 Want to use CityMunch's deals in an app of your own? Check out our [partner program](https://partners.citymunchapp.com)!
 
