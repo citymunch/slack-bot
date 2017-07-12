@@ -37,6 +37,8 @@ app.get('/', function(req, res) {
 });
 
 app.get('/oauth', function(req, res) {
+    console.log('Got OAuth install request', req.query);
+
     const code = req.query.code;
 
     slackApi.get(`/oauth.access?client_id=${config.slackClientId}&client_secret=${config.slackClientSecret}&code=${code}`)
