@@ -14,6 +14,7 @@ const slackTeams = require('./slack/teams');
 const errors = require('./citymunch/errors');
 const savedLocations = require('./citymunch/saved-locations');
 const dailyNotifications = require('./citymunch/daily-notifications');
+const clickThroughUrls = require('./citymunch/click-through-urls');
 
 const app = express();
 
@@ -95,7 +96,7 @@ function getUserFriendlyErrorMessage(error, query) {
 /**
  * Responds to /citymunch.
  */
-async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, responseUrl, userId) {
+async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, responseUrl, userId, teamId) {
     if (query.trim() === '') {
         console.log('Empty query given');
         httpResponse.send('');
@@ -107,7 +108,7 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
     }
 
     try {
-        const result = await searcher.search(query, userId);
+        const result = await searcher.search(query, userId, teamId);
 
         const messageResponse = {
             response_type: 'in_channel',
@@ -185,9 +186,9 @@ async function searchAndRespondToSlashCityMunchCommand(query, httpResponse, resp
 /**
  * Responds to @citymunch.
  */
-async function searchAndRespondToCityMunchMention(query, team, channelId, userId) {
+async function searchAndRespondToCityMunchMention(query, team, channelId, userId, teamId) {
     try {
-        const result = await searcher.search(query, userId);
+        const result = await searcher.search(query, userId, teamId);
 
         await slackTeams.postToChannel(team, channelId, result.message);
         console.log('Replied in channel:', result.message);
@@ -228,7 +229,7 @@ async function handleSlashCitymunch(req, res) {
         const text = EASTER_EGGS[req.body.text.toLowerCase()]();
         res.send(getInChannelPlainTextResponse(text));
     } else {
-        searchAndRespondToSlashCityMunchCommand(req.body.text, res, req.body.responseUrl, req.body.userId);
+        searchAndRespondToSlashCityMunchCommand(req.body.text, res, req.body.responseUrl, req.body.userId, req.body.teamId);
     }
 
     slackSlashCommands.saveUse(req.body);
@@ -363,6 +364,35 @@ app.get('/static/go-away.gif', function(req, res) {
         res.type('image/gif');
         res.send(image);
     });
+});
+
+async function handleClickThrough(req, res) {
+    const linkId = req.params.linkId;
+
+    const record = await clickThroughUrls.findById(linkId);
+    if (!record) {
+        res.redirect('http://citymunchapp.com/');
+        return;
+    }
+
+    const target = `${config.urlShortener}/slack/${record.restaurantId}`;
+    res.redirect(target);
+
+    const userAgent = req.headers['user-agent'];
+    const isBot = userAgent.indexOf('https://api.slack.com/robots') !== -1;
+
+    if (!isBot) {
+        console.log('Redirecting click-through to:', target);
+    }
+
+    if (!isBot) {
+        const ipAddress = req.headers['x-real-ip'];
+        clickThroughUrls.incrementClickThroughs(linkId, userAgent, ipAddress);
+    }
+}
+
+app.get('/c/:linkId', function(req, res) {
+    handleClickThrough(req, res);
 });
 
 module.exports = {

@@ -6,4 +6,5 @@ module.exports = {
     citymunchApiKey: '',
     database: 'slack_dev',
     urlShortener: 'http://dev-url-shortener.citymun.ch',
+    slackBotHost: 'https://slackbot.citymunchapp.com',
 };

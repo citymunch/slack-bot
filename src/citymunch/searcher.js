@@ -1,7 +1,6 @@
 'use strict';
 
 const cmApi = require('./api');
-const config = require('../../config/server');
 const geocoder = require('./geocoder');
 const LocalDate = require('local-date-time').LocalDate;
 const LocalTime = require('local-date-time').LocalTime;
@@ -11,6 +10,7 @@ const utils = require('../utils');
 const errors = require('./errors');
 const guid = require('guid');
 const savedLocations = require('./saved-locations');
+const clickThroughUrls = require('./click-through-urls');
 
 const MIXED_REGEX = new RegExp(/.+ (in|around|near) .+/, 'i');
 const MIXED_SPLIT_REGEX = new RegExp(/ (in|around|near) /, 'i');
@@ -274,9 +274,9 @@ const MIN_SEARCH_AREA_IN_KILOMETERS = 1.2;
  * @return {Promise}
  * @throws {UserNeedsToSayWhereTheyAreError}
  */
-async function search(text, userId) {
+async function search(text, userId, teamId) {
     const criteria = await parse(text, userId);
-    return searchByCriteria(criteria);
+    return searchByCriteria(criteria, teamId);
 }
 
 /**
@@ -286,7 +286,7 @@ async function search(text, userId) {
  * @return {Promise}
  * @throws {UserNeedsToSayWhereTheyAreError}
  */
-async function searchByCriteria(criteria) {
+async function searchByCriteria(criteria, teamId) {
     let url = '/restaurants/search/authorised-restaurants?';
 
     if (criteria.cuisineType) {
@@ -367,7 +367,9 @@ async function searchByCriteria(criteria) {
             for (let i = 0; i < criteria.restaurants.length; i++) {
                 const restaurant = criteria.restaurants[i];
                 message += `${restaurant.name} doesn\'t have any offers coming up today.\n`;
-                message += `<${config.urlShortener}/slack/${restaurant.id}|View on CityMunch>\n`;
+
+                const url = await clickThroughUrls.getRestaurantUrl(restaurant.id, teamId);
+                message += `<${url}|View on CityMunch>\n`;
             }
 
             return {
@@ -431,7 +433,7 @@ async function searchByCriteria(criteria) {
         }
     }
 
-    function buildMessageFromEvent(event, inNextTwoHours) {
+    async function buildMessageFromEvent(event, inNextTwoHours) {
         const prettyStartTime = utils.formatLocalTime(LocalTime.of(event.event.startTime));
         const prettyEndTime = utils.formatLocalTime(LocalTime.of(event.event.endTime));
         const walkingDistance = getWalkingDistance(event.restaurant.id);
@@ -485,15 +487,21 @@ async function searchByCriteria(criteria) {
         }
 
         eventMessage += '\n';
-        eventMessage += `<${config.urlShortener}/slack/${event.restaurant.id}|Reserve voucher>\n`;
+
+        const url = await clickThroughUrls.getRestaurantUrl(event.restaurant.id, teamId);
+        eventMessage += `<${url}|Reserve voucher>\n`;
 
         eventMessage = eventMessage.trim();
 
         offerMessageParts.push(eventMessage);
     }
 
-    nextTwoHours.forEach(event => buildMessageFromEvent(event, true));
-    onLater.forEach(event => buildMessageFromEvent(event, false));
+    for (let i = 0; i < nextTwoHours.length; i++) {
+        await buildMessageFromEvent(nextTwoHours[i], true);
+    }
+    for (let i = 0; i < onLater.length; i++) {
+        await buildMessageFromEvent(onLater[i], false);
+    }
 
     let message = '';
     let messageAfterShowingMore = '';

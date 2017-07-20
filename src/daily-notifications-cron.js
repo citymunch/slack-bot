@@ -6,6 +6,7 @@ const dailyNotifications = require('./citymunch/daily-notifications');
 const searchQueries = require('./citymunch/search-queries');
 const searcher = require('./citymunch/searcher');
 const slackResponses = require('./slack/responses');
+const slackTeams = require('./slack/teams');
 const LocalTime = require('local-date-time').LocalTime;
 
 async function doNotifications() {
@@ -20,7 +21,10 @@ async function doNotifications() {
         criteria.startTime = LocalTime.of('12:00');
         criteria.endTime = LocalTime.of('14:30');
 
-        const result = await searcher.searchByCriteria(criteria, userId);
+        const team = slackTeams.findTeamWithUser(userId);
+        const teamId = team ? team.teamId : null;
+
+        const result = await searcher.searchByCriteria(criteria, teamId);
 
         const attachments = [];
 
