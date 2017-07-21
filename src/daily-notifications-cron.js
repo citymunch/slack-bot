@@ -14,6 +14,8 @@ async function doNotifications() {
 
     for (let i = 0; i < users.length; i++) {
         const userId = users[i];
+        console.log('Doing daily notifications for user ' + userId);
+
         const lastLocation = await searchQueries.findLatestLocationByUserId(userId);
 
         const criteria = searcher.createEmptyParseResult();
@@ -21,8 +23,10 @@ async function doNotifications() {
         criteria.startTime = LocalTime.of('12:00');
         criteria.endTime = LocalTime.of('14:30');
 
-        const team = slackTeams.findTeamWithUser(userId);
+        const team = await slackTeams.findTeamWithUser(userId);
         const teamId = team ? team.teamId : null;
+
+        console.log('Team ID is ' + teamId);
 
         const result = await searcher.searchByCriteria(criteria, teamId);
 
