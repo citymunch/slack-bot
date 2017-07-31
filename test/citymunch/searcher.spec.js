@@ -415,10 +415,12 @@ describe('Searcher', () => {
                 .catch(done);
         });
 
-        it('should return a specifically chosen restaurant even if there are no upcoming offers', (done) => {
-            search('K10')
+        it('should return a specifically chosen restaurant if it is authorised even if there are no upcoming offers', (done) => {
+            const authorisedRestaurantWithoutOffers = 'Blue Pig';
+
+            search(authorisedRestaurantWithoutOffers)
                 .then(result => {
-                    if (result.hasEvents === false && result.message.indexOf('K10 doesn\'t have any offers coming up today.') !== -1) {
+                    if (result.hasEvents === false && result.message.indexOf(authorisedRestaurantWithoutOffers + ' doesn\'t have any offers coming up today.') !== -1) {
                         done();
                     } else {
                         done(new Error('Result invalid: ' + JSON.stringify(result)));
