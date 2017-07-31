@@ -375,7 +375,7 @@ async function handleClickThrough(req, res) {
         return;
     }
 
-    const target = `${config.urlShortener}/slack/${record.restaurantId}`;
+    const target = `${config.urlShortener}/slack/${record.restaurantId}?cm_stid=${record.teamId}`;
     res.redirect(target);
 
     const userAgent = req.headers['user-agent'];
