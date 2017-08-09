@@ -480,10 +480,10 @@ async function searchByCriteria(criteria, teamId) {
             eventMessage += ` (${event.event.coversRemaining} left)`;
         }
 
-        if (event.offer.groupDiscountBonuses && event.offer.groupDiscountBonuses.length > 0) {
-            const groupBonus = event.offer.groupDiscountBonuses[0];
-            const totalDiscount = groupBonus.bonus + event.event.discount;
-            eventMessage += `\nGroups of ${groupBonus.minCovers}+ get ${totalDiscount}%`;
+        if (event.event.groupDiscountBonuses && event.event.groupDiscountBonuses.length > 0) {
+            const firstGroupBonus = event.event.groupDiscountBonuses[0];
+            const totalDiscount = firstGroupBonus.bonus + event.event.discount;
+            eventMessage += `\nGroups of ${firstGroupBonus.minCovers}+ get ${totalDiscount}%`;
         }
 
         eventMessage += '\n';
