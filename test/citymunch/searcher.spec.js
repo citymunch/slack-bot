@@ -416,7 +416,7 @@ describe('Searcher', () => {
         });
 
         it('should return a specifically chosen restaurant if it is authorised even if there are no upcoming offers', (done) => {
-            const authorisedRestaurantWithoutOffers = 'Blue Pig';
+            const authorisedRestaurantWithoutOffers = 'The Little Taquero @ Harbourside';
 
             search(authorisedRestaurantWithoutOffers)
                 .then(result => {
