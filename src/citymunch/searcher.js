@@ -459,8 +459,8 @@ async function searchByCriteria(criteria, teamId) {
 
         eventMessage += `${event.event.discount}% off`;
 
-        if (event.offer.itemName) {
-            eventMessage += ` *${event.offer.itemName}*`;
+        if (event.offer.longItemName) {
+            eventMessage += ` *${event.offer.longItemName}*`;
         }
 
         eventMessage += ` at ${event.restaurant.name} (${event.restaurant.streetName}) - ${prettyStartTime}-${prettyEndTime}`;
