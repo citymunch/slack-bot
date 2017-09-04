@@ -15,6 +15,7 @@ function doRequest(method, path) {
                 headers: {
                     'Authorization': 'Partner ' + config.citymunchApiKey,
                     'Accept': 'application/vnd.citymunch.v15+json',
+                    'User-Agent': 'CM Slack bot',
                 },
             },
             function (res) {
