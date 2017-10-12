@@ -14,7 +14,7 @@ describe('Daily notifications', () => {
         it('should successfully send and record the response in the database', (done) => {
             notifications.sendDirectMessageToUser(AMY_BOYD_USER_ID_IN_SLACK, 'Test message')
                 .then(() => done())
-                .catch(() => done(new Error()));
+                .catch(error => done(new Error('Error caught: ' + error)));
         });
     });
 
@@ -22,7 +22,7 @@ describe('Daily notifications', () => {
         it('should successfully send a prompt', (done) => {
             notifications.promptToEnableNotifications(AMY_BOYD_USER_ID_IN_SLACK)
                 .then(() => done())
-                .catch(() => done(new Error()));
+                .catch(error => done(new Error('Error caught: ' + error)));
         });
     });
 });
